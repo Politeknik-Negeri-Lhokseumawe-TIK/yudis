@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/pendaftaran_model.dart';
@@ -145,7 +146,8 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
               : null,
         );
 
-        state = state.copyWith(pendaftaran: pendaftaran, isLoading: false, currentStep: 1);
+        // Bug #3 Fix: pertahankan currentStep yang sedang aktif, jangan reset
+        state = state.copyWith(pendaftaran: pendaftaran, isLoading: false);
       } else {
         state = state.copyWith(isLoading: false);
       }
@@ -240,7 +242,8 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
   }
 
   /// Upload dokumen ke Supabase Storage + update record
-  Future<void> uploadDokumen({
+  /// Returns [true] jika berhasil, [false] jika gagal
+  Future<bool> uploadDokumen({
     required String dokumenId,
     required List<int> fileBytes,
     required String fileName,
@@ -248,24 +251,71 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
     required String userId,
   }) async {
     final pendaftaran = state.pendaftaran;
-    if (pendaftaran == null) return;
+    if (pendaftaran == null) return false;
+
+    // Bug #4 Fix: Optimistic update — langsung tandai dokumen sebagai uploading
+    // di state lokal agar UI langsung responsif sebelum Supabase merespons
+    final optimisticDokumen = pendaftaran.dokumen.map((d) {
+      if (d.id != dokumenId) return d;
+      return DokumenSyarat(
+        id: d.id,
+        kode: d.kode,
+        nama: d.nama,
+        deskripsi: d.deskripsi,
+        isWajib: d.isWajib,
+        kondisiJenjang: d.kondisiJenjang,
+        kondisiAsrama: d.kondisiAsrama,
+        status: StatusDokumen.menunggu,
+        filePath: d.filePath,
+        fileName: fileName, // tampilkan nama file asli segera
+        fileSize: fileSize,
+        catatanAdmin: d.catatanAdmin,
+        maxSizeBytes: d.maxSizeBytes,
+      );
+    }).toList();
+    state = state.copyWith(
+      pendaftaran: PendaftaranYudisium(
+        id: pendaftaran.id,
+        userId: pendaftaran.userId,
+        periodeId: pendaftaran.periodeId,
+        programStudi: pendaftaran.programStudi,
+        jenjang: pendaftaran.jenjang,
+        ipk: pendaftaran.ipk,
+        totalSks: pendaftaran.totalSks,
+        semester: pendaftaran.semester,
+        tinggalDiAsrama: pendaftaran.tinggalDiAsrama,
+        dokumen: optimisticDokumen,
+        biodata: pendaftaran.biodata,
+        status: pendaftaran.status,
+        submittedAt: pendaftaran.submittedAt,
+      ),
+    );
 
     try {
-      // Upload ke Supabase Storage bucket 'dokumen'
-      final storagePath = '$userId/${pendaftaran.id}/$dokumenId/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      // Bug #5 Fix: Path tetap tanpa timestamp agar file lama
+      // otomatis tertimpa (upsert) — tidak ada ghost file di storage
+      final ext = fileName.contains('.')
+          ? fileName.split('.').last.toLowerCase()
+          : 'bin';
+      final storagePath =
+          '$userId/${pendaftaran.id}/$dokumenId/berkas.$ext';
+
+      // Bug #1 Fix: konversi ke Uint8List agar uploadBinary bekerja
+      final bytes = Uint8List.fromList(fileBytes);
       await _supabase.storage.from('dokumen').uploadBinary(
         storagePath,
-        fileBytes as dynamic,
+        bytes,
         fileOptions: const FileOptions(upsert: true),
       );
 
-      final fileUrl = _supabase.storage.from('dokumen').getPublicUrl(storagePath);
+      final fileUrl =
+          _supabase.storage.from('dokumen').getPublicUrl(storagePath);
 
-      // Update record di Supabase
+      // Update record di Supabase dengan nama file asli (Bug #5)
       await _supabase.from('dokumen_pendaftaran').update({
         'status': 'menunggu',
         'file_url': fileUrl,
-        'file_name': fileName,
+        'file_name': fileName, // nama asli sesuai file yang dipilih user
         'file_size': fileSize,
         'uploaded_at': DateTime.now().toIso8601String(),
       }).eq('id', dokumenId);
@@ -279,10 +329,15 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
         description: 'Mahasiswa mengupload dokumen: $fileName',
       );
 
-      // Refresh pendaftaran
+      // Refresh state dari Supabase untuk sinkronisasi final
       await loadExistingPendaftaran(userId);
+      return true;
     } catch (e) {
+      // Bug #2 Fix: kembalikan false agar caller bisa tampilkan error ke UI
+      // Rollback optimistic update — kembalikan state ke kondisi sebelum upload
+      await loadExistingPendaftaran(userId);
       state = state.copyWith(error: 'Gagal upload dokumen: $e');
+      return false;
     }
   }
 

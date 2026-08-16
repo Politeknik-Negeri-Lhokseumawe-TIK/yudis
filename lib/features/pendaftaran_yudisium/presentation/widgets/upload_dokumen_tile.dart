@@ -111,7 +111,8 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
     final userId = ref.read(authProvider).user?.id ?? '';
     setState(() => _isUploading = true);
 
-    await ref.read(pendaftaranProvider.notifier).uploadDokumen(
+    // Bug #2 Fix: tangkap bool return, tampilkan error jika gagal
+    final success = await ref.read(pendaftaranProvider.notifier).uploadDokumen(
           dokumenId: widget.dokumen.id,
           fileBytes: file.bytes!,
           fileName: file.name,
@@ -121,7 +122,51 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
 
     if (mounted) {
       setState(() => _isUploading = false);
-      widget.onStatusChanged?.call();
+      if (!success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF2E1020),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppTokens.error, width: 1.5),
+            ),
+            content: Row(
+              children: [
+                const Icon(Icons.cloud_off_rounded, color: AppTokens.error, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Gagal Mengunggah Berkas',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'File "${file.name}" gagal diunggah. Periksa koneksi internet lalu coba lagi.',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else {
+        widget.onStatusChanged?.call();
+      }
     }
   }
 

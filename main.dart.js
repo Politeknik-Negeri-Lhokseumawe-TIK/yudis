@@ -110065,28 +110065,28 @@ o=J.ae(n)
 l=o.gv(n)
 q=J.ae(m)
 k=q.i(m,"disetujui")
-if(k==null)k=1
+if(k==null)k=0
 j=q.i(m,"pending_akun")
-if(j==null)j=3
+if(j==null)j=0
 i=q.i(m,"submitted")
-if(i==null)i=2
+if(i==null)i=0
 r=A.b([r,B.a_,A.lG(A.bL(A.bz(A.ax(A.b([A.aR(new A.wJ("Total Pendaftar",l,"Real-time pendaftar",B.w2,B.w,B.pE,f),1,f),B.bz,A.aR(new A.wJ("Disetujui",k,"Dokumen valid",B.iy,B.a8,B.a5U,f),1,f),B.bz,A.aR(new A.wJ("Akun Pending",j,"Perlu persetujuan",B.Wn,B.F,B.a7j,f),1,f),B.bz,A.aR(new A.wJ("Menunggu Review",i,"Berkas masuk",B.Wf,B.aZ,B.AJ,f),1,f)],a1),B.l,B.f,B.h,0),f),A.av(15e4,0,0),A.av(e,0,0)),0.15,f,f,f,0),B.a_],a1)
 if(b){o=o.gv(n)
 n=q.i(m,"trkj")
-if(n==null)n=2
+if(n==null)n=0
 h=q.i(m,"trmm")
-if(h==null)h=1
+if(h==null)h=0
 q=q.i(m,"ti")
-q=A.aR(A.au(A.b([A.bL(A.bz(new A.He(o,n,h,q==null?1:q,f),f),A.av(25e4,0,0),A.av(e,0,0)),B.a_,A.bL(A.bz(g.Vc(a2),f),A.av(35e4,0,0),A.av(e,0,0))],a1),B.l,B.f,B.h),3,f)
+q=A.aR(A.au(A.b([A.bL(A.bz(new A.He(o,n,h,q==null?0:q,f),f),A.av(25e4,0,0),A.av(e,0,0)),B.a_,A.bL(A.bz(g.Vc(a2),f),A.av(35e4,0,0),A.av(e,0,0))],a1),B.l,B.f,B.h),3,f)
 o=A.b([A.bL(A.bz(g.V9(a2,d),f),A.av(3e5,0,0),A.av(e,0,0)),B.a_],a1)
 if(J.hF(d.a))o.push(A.bL(A.bz(g.Vb(a2,d),f),A.av(45e4,0,0),A.av(e,0,0)))
 r.push(A.ax(A.b([q,B.Nn,A.aR(A.au(o,B.l,B.f,B.h),2,f)],a1),B.u,B.f,B.h,0))}else{o=o.gv(n)
 n=q.i(m,"trkj")
-if(n==null)n=2
+if(n==null)n=0
 h=q.i(m,"trmm")
-if(h==null)h=1
+if(h==null)h=0
 q=q.i(m,"ti")
-a1=A.b([A.bL(A.bz(new A.He(o,n,h,q==null?1:q,f),f),A.av(25e4,0,0),A.av(e,0,0)),B.a_,A.bL(A.bz(g.V9(a2,d),f),A.av(3e5,0,0),A.av(e,0,0)),B.a_,A.bL(A.bz(g.Vc(a2),f),A.av(35e4,0,0),A.av(e,0,0)),B.a_],a1)
+a1=A.b([A.bL(A.bz(new A.He(o,n,h,q==null?0:q,f),f),A.av(25e4,0,0),A.av(e,0,0)),B.a_,A.bL(A.bz(g.V9(a2,d),f),A.av(3e5,0,0),A.av(e,0,0)),B.a_,A.bL(A.bz(g.Vc(a2),f),A.av(35e4,0,0),A.av(e,0,0)),B.a_],a1)
 if(J.hF(d.a))a1.push(A.bL(A.bz(g.Vb(a2,d),f),A.av(e,0,0),A.av(e,0,0)))
 B.b.K(r,a1)}r.push(B.bW)
 return A.iD(A.nc(A.iC(4,A.fC(!0,A.j1(A.cq(new A.d6(B.tc,new A.bf(new A.ai(a,s,a,s),A.au(r,B.u,B.f,B.h),f),f),f,f),f,B.B,f,f,B.c6,B.ab),!b)),"/admin/dashboard",a0),B.bK,t.lu)},

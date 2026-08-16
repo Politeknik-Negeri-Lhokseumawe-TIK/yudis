@@ -11,6 +11,7 @@ class TemplateSyaratDokumen {
     this.kondisiJenjang,
     this.kondisiAsrama,
     this.urutan = 0,
+    this.maxSizeBytes = 2097152, // Default 2 MB
   });
 
   final String id;
@@ -21,6 +22,7 @@ class TemplateSyaratDokumen {
   final Jenjang? kondisiJenjang;
   final bool? kondisiAsrama;
   final int urutan;
+  final int maxSizeBytes;
 
   DokumenSyarat toDokumenSyarat() => DokumenSyarat(
         id: 'doc_$id',
@@ -30,6 +32,7 @@ class TemplateSyaratDokumen {
         isWajib: isWajib,
         kondisiJenjang: kondisiJenjang,
         kondisiAsrama: kondisiAsrama,
+        maxSizeBytes: maxSizeBytes,
       );
 }
 

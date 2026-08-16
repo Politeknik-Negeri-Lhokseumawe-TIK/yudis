@@ -114,6 +114,7 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
             fileName: dm['file_name'] as String?,
             fileSize: dm['file_size'] as int?,
             catatanAdmin: dm['catatan_admin'] as String?,
+            maxSizeBytes: _resolveMaxSizeBytes(dm['kode'] as String? ?? ''),
           );
         }).toList();
 
@@ -357,6 +358,13 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
     'pembimbing_1': b.pembimbing1,
     'pembimbing_2': b.pembimbing2,
   };
+
+  static int _resolveMaxSizeBytes(String kode) {
+    final upper = kode.toUpperCase();
+    if (upper.contains('FOTO')) return 1048576; // 1 MB
+    if (upper.contains('TGA') || upper.contains('SERTIFIKAT')) return 3145728; // 3 MB
+    return 2097152; // 2 MB Default
+  }
 }
 
 // ── Providers ─────────────────────────────────────────────────

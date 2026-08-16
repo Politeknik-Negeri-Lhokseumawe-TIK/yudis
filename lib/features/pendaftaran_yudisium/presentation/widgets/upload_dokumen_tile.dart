@@ -56,6 +56,57 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
     final file = result.files.first;
     if (file.bytes == null) return;
 
+    // ── Validasi Batas Ukuran File (Client-Side Pre-Check) ──
+    if (file.size > widget.dokumen.maxSizeBytes) {
+      final actualSizeStr = _formatSize(file.size);
+      final maxSizeStr = widget.dokumen.maxSizeFormatted;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF2E1020),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppTokens.error, width: 1.5),
+            ),
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline_rounded, color: AppTokens.error, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Ukuran File Melebihi Batas!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'File "${file.name}" ($actualSizeStr) terlalu besar. Batas maksimal yang diizinkan adalah $maxSizeStr.',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+      return;
+    }
+
     final userId = ref.read(authProvider).user?.id ?? '';
     setState(() => _isUploading = true);
 
@@ -134,6 +185,29 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
                                 ),
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        // Badge Batas Ukuran MB
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTokens.accentGold.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: AppTokens.accentGold.withValues(alpha: 0.35),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Text(
+                            'Maks. ${dok.maxSizeFormatted}',
+                            style: const TextStyle(
+                              color: AppTokens.accentGoldLight,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
                         // Status chip
                         _StatusChip(
                           label: dok.status.label,

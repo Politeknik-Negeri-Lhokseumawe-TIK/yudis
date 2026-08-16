@@ -64,6 +64,24 @@ void main() {
       expect(pendaftaran.totalDokumenWajib, 2);
       expect(pendaftaran.dokumenTerUpload, 1);
       expect(pendaftaran.uploadProgress, 0.5);
+
+      // Test batas ukuran file (File Size Limit)
+      final dok1Mb = DokumenSyarat(
+        id: 'd_foto',
+        kode: 'FOTO_4X6',
+        nama: 'Pas Foto',
+        deskripsi: 'Foto Formal',
+        maxSizeBytes: 1048576,
+      );
+      final dok3Mb = DokumenSyarat(
+        id: 'd_tga',
+        kode: 'TGA_ACC',
+        nama: 'Lembar TGA',
+        deskripsi: 'Lembar Pengesahan',
+        maxSizeBytes: 3145728,
+      );
+      expect(dok1Mb.maxSizeFormatted, '1 MB');
+      expect(dok3Mb.maxSizeFormatted, '3 MB');
     });
 
     test('Notifikasi model deserialization test', () {

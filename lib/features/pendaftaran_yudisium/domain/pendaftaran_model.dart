@@ -81,6 +81,7 @@ class DokumenSyarat {
     this.fileSize,
     this.catatanAdmin,
     this.ada = true,
+    this.maxSizeBytes = 2097152, // Default 2 MB (2 * 1024 * 1024)
   });
 
   final String id;
@@ -92,6 +93,7 @@ class DokumenSyarat {
   final Jenjang? kondisiJenjang;
   /// null = berlaku semua, true = hanya asrama, false = hanya non-asrama
   final bool? kondisiAsrama;
+  final int maxSizeBytes;
 
   StatusDokumen status;
   String? filePath;
@@ -103,6 +105,14 @@ class DokumenSyarat {
   bool get isUploaded =>
       status != StatusDokumen.belumUpload && filePath != null;
 
+  String get maxSizeFormatted {
+    if (maxSizeBytes >= 1048576) {
+      final mb = maxSizeBytes / 1048576;
+      return '${mb == mb.roundToDouble() ? mb.toInt() : mb.toStringAsFixed(1)} MB';
+    }
+    return '${(maxSizeBytes / 1024).round()} KB';
+  }
+
   DokumenSyarat copyWith({
     StatusDokumen? status,
     String? filePath,
@@ -110,6 +120,7 @@ class DokumenSyarat {
     int? fileSize,
     String? catatanAdmin,
     bool? ada,
+    int? maxSizeBytes,
   }) {
     return DokumenSyarat(
       id: id,
@@ -125,6 +136,7 @@ class DokumenSyarat {
       fileSize: fileSize ?? this.fileSize,
       catatanAdmin: catatanAdmin ?? this.catatanAdmin,
       ada: ada ?? this.ada,
+      maxSizeBytes: maxSizeBytes ?? this.maxSizeBytes,
     );
   }
 }

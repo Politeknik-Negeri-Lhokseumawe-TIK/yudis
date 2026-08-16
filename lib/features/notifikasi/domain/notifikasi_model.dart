@@ -58,17 +58,37 @@ class NotifikasiRepository {
         .toList();
   }
 
-  /// Stream notifikasi real-time (Supabase Realtime)
-  static Stream<List<Notifikasi>> notifikasiStream(String userId) {
-    return _supabase
-        .from('notifikasi')
-        .stream(primaryKey: ['id'])
-        .eq('user_id', userId)
-        .order('created_at', ascending: false)
-        .limit(50)
-        .map((rows) => rows
-            .map((r) => Notifikasi.fromRow(r))
-            .toList());
+  /// Stream notifikasi real-time dengan fallback otomatis jika Realtime DB belum diaktifkan
+  static Stream<List<Notifikasi>> notifikasiStream(String userId) async* {
+    // 1. Ambil data awal via REST API agar langsung tampil seketika
+    try {
+      final initialData = await getNotifikasi(userId);
+      yield initialData;
+    } catch (_) {}
+
+    // 2. Hubungkan ke Supabase Realtime Stream
+    try {
+      final stream = _supabase
+          .from('notifikasi')
+          .stream(primaryKey: ['id'])
+          .eq('user_id', userId)
+          .order('created_at', ascending: false)
+          .limit(50)
+          .map((rows) => rows.map((r) => Notifikasi.fromRow(r)).toList());
+
+      await for (final list in stream) {
+        yield list;
+      }
+    } catch (e) {
+      // 3. Fallback: Jika Realtime replication belum aktif di Supabase, lakukan polling aman
+      while (true) {
+        await Future.delayed(const Duration(seconds: 8));
+        try {
+          final data = await getNotifikasi(userId);
+          yield data;
+        } catch (_) {}
+      }
+    }
   }
 
   /// Tandai notifikasi sebagai sudah dibaca

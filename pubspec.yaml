@@ -1,0 +1,88 @@
+name: yudis
+description: "Aplikasi Pendaftaran Yudisium - Jurusan TIK Politeknik Negeri Lhokseumawe"
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Icons
+  cupertino_icons: ^1.0.8
+
+  # Routing
+  go_router: ^14.8.1
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # HTTP & Networking
+  dio: ^5.8.0+1
+
+  # Secure Storage (JWT token)
+  flutter_secure_storage: ^9.2.4
+
+  # Local Cache
+  shared_preferences: ^2.3.5
+
+  # File & Image Picking
+  file_picker: ^8.3.7
+  image_picker: ^1.1.2
+
+  # Animations
+  flutter_animate: ^4.5.2
+  shimmer: ^3.0.0
+  lottie: ^3.3.1
+
+  # Typography
+  google_fonts: ^6.2.1
+
+  # Internationalization & Formatting
+  intl: ^0.20.2
+
+  # Model & Serialization
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # File Sharing & Opening
+  share_plus: ^10.1.4
+  open_filex: ^4.6.0
+
+  # SVG Support
+  flutter_svg: ^2.0.17
+
+  # Security & Cryptography
+  crypto: ^3.0.6
+  encrypt: ^5.0.3
+
+  # Staggered list animations
+  flutter_staggered_animations: ^1.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # Lints
+  flutter_lints: ^6.0.0
+
+  # Code generation
+  build_runner: ^2.4.15
+  freezed: ^2.5.8
+  json_serializable: ^6.9.5
+  riverpod_generator: ^2.6.4
+
+flutter:
+  uses-material-design: true
+
+  # Assets
+  assets:
+    - assets/images/
+    - assets/svg/
+    - assets/lottie/

@@ -33762,7 +33762,7 @@ $.aaw=$.aap=null}if($.aTU() instanceof A.AQ)$.bmk=A.bmj()
 s=2
 return A.o(A.dE(null,t.H),$async$aax)
 case 2:s=3
-return A.o(A.aAk("GANTI_DENGAN_ANON_KEY_ANDA","https://GANTI_DENGAN_PROJECT_URL_ANDA.supabase.co"),$async$aax)
+return A.o(A.aAk("sb_publishable_eo50rFNcCtRttuxEEB4C3A_qXh-Nxcl","https://oojqbdnopdbolyuprmqa.supabase.co"),$async$aax)
 case 3:A.aAq(B.ahT)
 if($.a6==null)A.a_3()
 q=$.a6

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../providers/admin_provider.dart';
 import '../../domain/admin_models.dart';
+import '../../domain/auto_verification_service.dart';
+import '../../data/admin_repository.dart';
 import '../../../pendaftaran_yudisium/domain/pendaftaran_model.dart';
 import '../../../../shared/widgets/animated_background.dart';
 import '../../../../shared/widgets/glass_card.dart';
@@ -25,9 +27,132 @@ class VerifikasiBerkasScreen extends ConsumerStatefulWidget {
       _VerifikasiBerkasScreenState();
 }
 
-class _VerifikasiBerkasScreenState
-    extends ConsumerState<VerifikasiBerkasScreen> {
-  String _selectedFilter = 'semua'; // 'semua', 'review', 'disetujui', 'revisi', 'draft'
+class _VerifikasiBerkasScreenState extends ConsumerState<VerifikasiBerkasScreen> {
+  String _selectedFilter = 'semua';
+  bool _isBatchProcessing = false;
+
+  Future<void> _runBatchAutoVerify() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1B1630),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppTokens.radiusLG),
+          side: const BorderSide(color: Colors.white12),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome_rounded,
+                color: AppTokens.accentGold, size: 24),
+            SizedBox(width: 10),
+            Text('Auto-Verifikasi Sistem (Massal)',
+                style: TextStyle(color: Colors.white, fontSize: 16)),
+          ],
+        ),
+        content: const Text(
+          'Sistem akan memeriksa kelengkapan, format biner, kesesuaian kata kunci, dan aturan akademik seluruh berkas pendaftaran mahasiswa secara otomatis.\n\nApakah Anda ingin menjalankan proses ini sekarang?',
+          style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTokens.primaryPurple,
+            ),
+            icon: const Icon(Icons.play_arrow_rounded, size: 18),
+            label: const Text('Mulai Auto-Verifikasi'),
+            onPressed: () => Navigator.pop(ctx, true),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    setState(() => _isBatchProcessing = true);
+    try {
+      final repo = AdminRepository();
+      final result = await repo.batchAutoVerifyAll();
+      await ref.read(adminProvider.notifier).loadAll();
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1B1630),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTokens.radiusLG),
+              side: const BorderSide(color: Colors.white12),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.verified_rounded,
+                    color: AppTokens.success, size: 24),
+                SizedBox(width: 10),
+                Text('Auto-Verifikasi Selesai! 🎉',
+                    style: TextStyle(color: Colors.white, fontSize: 16)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Total Mahasiswa Diproses: ${result["total"]}',
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.check_circle_rounded,
+                        color: AppTokens.success, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Disetujui Otomatis: ${result["auto_approved"]} mahasiswa',
+                      style: const TextStyle(color: AppTokens.success),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.flag_rounded,
+                        color: AppTokens.warning, size: 16),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Perlu Peninjauan Manual: ${result["flagged"]} mahasiswa',
+                      style: const TextStyle(color: AppTokens.warning),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Selesai'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: AppTokens.error,
+            content: Text('Gagal menjalankan auto-verifikasi: $e'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isBatchProcessing = false);
+    }
+  } // 'semua', 'review', 'disetujui', 'revisi', 'draft'
 
   @override
   Widget build(BuildContext context) {
@@ -105,6 +230,45 @@ class _VerifikasiBerkasScreenState
                                     ),
                               ),
                               const Spacer(),
+                              ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTokens.accentGold
+                                      .withValues(alpha: 0.15),
+                                  foregroundColor: AppTokens.accentGold,
+                                  side: BorderSide(
+                                    color: AppTokens.accentGold
+                                        .withValues(alpha: 0.6),
+                                    width: 1.2,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                icon: _isBatchProcessing
+                                    ? const SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: AppTokens.accentGold),
+                                      )
+                                    : const Icon(Icons.auto_awesome_rounded,
+                                        size: 16),
+                                label: Text(
+                                  _isBatchProcessing
+                                      ? 'Memproses...'
+                                      : '⚡ Auto-Verifikasi Sistem (Batch)',
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                onPressed: _isBatchProcessing
+                                    ? null
+                                    : _runBatchAutoVerify,
+                              ),
+                              const SizedBox(width: 8),
                               IconButton(
                                 tooltip: 'Muat Ulang',
                                 icon: const Icon(Icons.refresh_rounded,
@@ -343,6 +507,124 @@ class _VerifikasiBerkasScreenState
                       ).animate().fadeIn(duration: 350.ms),
                       const SizedBox(height: AppTokens.spaceLG),
 
+                      // ── Card Analisis Auto-Verifikasi Sistem ──────────────
+                      () {
+                        final autoSummary =
+                            AutoVerificationService.verifyRegistration(pa);
+                        final score = autoSummary.overallScore;
+                        final isHighConfidence = score >= 75;
+
+                        return GlassCard(
+                          padding: const EdgeInsets.all(AppTokens.spaceMD),
+                          fillColor: isHighConfidence
+                              ? AppTokens.success.withValues(alpha: 0.08)
+                              : AppTokens.warning.withValues(alpha: 0.08),
+                          borderColor: isHighConfidence
+                              ? AppTokens.success.withValues(alpha: 0.3)
+                              : AppTokens.warning.withValues(alpha: 0.3),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    isHighConfidence
+                                        ? Icons.auto_awesome_rounded
+                                        : Icons.warning_amber_rounded,
+                                    color: isHighConfidence
+                                        ? AppTokens.success
+                                        : AppTokens.warning,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Analisis Sistem Verifikasi Otomatis',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall
+                                              ?.copyWith(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                        Text(
+                                          'Skor Kelayakan Berkas: $score% • ${isHighConfidence ? "Direkomendasikan Lolos Otomatis" : "Perlu Peninjauan Manual"}',
+                                          style: TextStyle(
+                                            color: isHighConfidence
+                                                ? AppTokens.success
+                                                : AppTokens.warning,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTokens.primaryPurple,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 6),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                    ),
+                                    icon: const Icon(
+                                        Icons.check_circle_outline_rounded,
+                                        size: 14),
+                                    label: const Text(
+                                      'Terapkan Rekomendasi ⚡',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    onPressed: () async {
+                                      final repo = AdminRepository();
+                                      await repo.autoVerifyRegistration(pa);
+                                      await ref
+                                          .read(adminProvider.notifier)
+                                          .loadAll();
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                'Hasil verifikasi otomatis berhasil diterapkan ✅'),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                              if (autoSummary.academicWarnings.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: AppTokens.error
+                                        .withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Peringatan Akademik: ${autoSummary.academicWarnings.join(", ")}',
+                                    style: const TextStyle(
+                                        color: AppTokens.error, fontSize: 11),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      }(),
+                      const SizedBox(height: AppTokens.spaceMD),
+
                       // Progress Bar & Dokumen Checklist Header
                       Row(
                         children: [
@@ -378,6 +660,10 @@ class _VerifikasiBerkasScreenState
                         final dok = e.value;
                         return _DokumenVerifikasiTile(
                           dokumen: dok,
+                          nim: user.nim,
+                          namaMahasiswa: user.nama,
+                          jenjang: p.jenjang,
+                          tinggalDiAsrama: p.tinggalDiAsrama,
                           onVerify: (status, catatan) {
                             ref
                                 .read(adminProvider.notifier)
@@ -688,8 +974,20 @@ class _PendaftaranListTile extends StatelessWidget {
 }
 
 class _DokumenVerifikasiTile extends StatelessWidget {
-  const _DokumenVerifikasiTile({required this.dokumen, required this.onVerify});
+  const _DokumenVerifikasiTile({
+    required this.dokumen,
+    required this.nim,
+    required this.namaMahasiswa,
+    required this.jenjang,
+    required this.tinggalDiAsrama,
+    required this.onVerify,
+  });
+
   final DokumenSyarat dokumen;
+  final String nim;
+  final String namaMahasiswa;
+  final Jenjang jenjang;
+  final bool tinggalDiAsrama;
   final void Function(StatusDokumen status, String? catatan) onVerify;
 
   Color get _statusColor => switch (dokumen.status) {
@@ -713,6 +1011,14 @@ class _DokumenVerifikasiTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final autoResult = AutoVerificationService.verifyDocument(
+      doc: dokumen,
+      nim: nim,
+      namaMahasiswa: namaMahasiswa,
+      jenjang: jenjang,
+      tinggalDiAsrama: tinggalDiAsrama,
+    );
+
     return Padding(
       padding: const EdgeInsets.only(bottom: AppTokens.spaceMD),
       child: GlassCard(
@@ -776,6 +1082,96 @@ class _DokumenVerifikasiTile extends StatelessWidget {
                 ),
               ],
             ),
+
+            // Smart System Score Pill
+            if (dokumen.isUploaded) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: (autoResult.confidenceScore >= 75
+                              ? AppTokens.success
+                              : AppTokens.warning)
+                          .withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: (autoResult.confidenceScore >= 75
+                                ? AppTokens.success
+                                : AppTokens.warning)
+                            .withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          autoResult.confidenceScore >= 75
+                              ? Icons.auto_awesome_rounded
+                              : Icons.warning_amber_rounded,
+                          size: 11,
+                          color: autoResult.confidenceScore >= 75
+                              ? AppTokens.success
+                              : AppTokens.warning,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Skor Sistem: ${autoResult.confidenceScore}%',
+                          style: TextStyle(
+                            color: autoResult.confidenceScore >= 75
+                                ? AppTokens.success
+                                : AppTokens.warning,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...autoResult.passedChecks.take(2).map((check) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '✓ $check',
+                          style: const TextStyle(
+                              color: Colors.white60, fontSize: 10),
+                        ),
+                      )),
+                ],
+              ),
+              if (autoResult.warnings.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppTokens.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded,
+                          color: AppTokens.warning, size: 12),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          autoResult.warnings.first,
+                          style: const TextStyle(
+                              color: AppTokens.warning, fontSize: 10.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
 
             if (dokumen.fileName != null) ...[
               const SizedBox(height: 6),
@@ -850,7 +1246,10 @@ class _DokumenVerifikasiTile extends StatelessWidget {
                       size: GlassButtonSize.small,
                       color: AppTokens.error,
                       onPressed: () => _showCatatanDialog(
-                          context, StatusDokumen.tidakValid),
+                        context,
+                        StatusDokumen.tidakValid,
+                        autoResult.autoDraftedNote,
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppTokens.spaceXS),
@@ -873,8 +1272,12 @@ class _DokumenVerifikasiTile extends StatelessWidget {
     );
   }
 
-  void _showCatatanDialog(BuildContext context, StatusDokumen status) {
-    final ctrl = TextEditingController(text: dokumen.catatanAdmin ?? '');
+  void _showCatatanDialog(
+      BuildContext context, StatusDokumen status, String? suggestedNote) {
+    final ctrl = TextEditingController(
+        text: dokumen.catatanAdmin?.isNotEmpty == true
+            ? dokumen.catatanAdmin!
+            : suggestedNote ?? '');
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -899,6 +1302,21 @@ class _DokumenVerifikasiTile extends StatelessWidget {
               'Alasan dokumen "${dokumen.nama}" perlu direvisi:',
               style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
+            if (suggestedNote != null) ...[
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppTokens.primaryPurple.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  '💡 Draf catatan otomatis telah diisi dari hasil analisis sistem.',
+                  style: TextStyle(
+                      color: AppTokens.primaryPurpleLight, fontSize: 10.5),
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             TextField(
               controller: ctrl,

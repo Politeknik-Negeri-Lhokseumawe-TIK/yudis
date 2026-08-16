@@ -4,6 +4,7 @@ import '../../pendaftaran_yudisium/domain/pendaftaran_model.dart';
 import '../../pendaftaran_yudisium/domain/template_syarat_model.dart';
 import '../domain/admin_models.dart';
 import '../domain/activity_log_model.dart';
+import '../domain/auto_verification_service.dart';
 
 /// Admin Repository — Supabase Real-Time Implementation
 class AdminRepository {
@@ -211,6 +212,79 @@ class AdminRepository {
     });
 
     return true;
+  }
+
+  /// ── Sistem Otomasi Verifikasi Dokumen ──────────────────────────
+
+  /// Jalankan auto-verifikasi untuk satu mahasiswa
+  Future<PendaftaranAutoVerificationSummary> autoVerifyRegistration(
+      PendaftaranAdmin pAdmin) async {
+    final summary = AutoVerificationService.verifyRegistration(pAdmin);
+    final pendaftaran = pAdmin.pendaftaran;
+    final mahasiswa = pAdmin.mahasiswa;
+
+    for (final doc in pendaftaran.dokumen) {
+      final res = summary.documentResults[doc.id];
+      if (res != null && doc.isUploaded) {
+        // Terapkan auto approval jika skor >= 75%
+        if (res.isAutoApproved) {
+          await _supabase.from('dokumen_pendaftaran').update({
+            'status': 'valid',
+            'catatan_admin': 'Terverifikasi otomatis oleh sistem (Skor: ${res.confidenceScore}%)',
+            'verified_at': DateTime.now().toIso8601String(),
+          }).eq('id', doc.id);
+        } else if (res.autoDraftedNote != null) {
+          // Rekam catatan draf sistem
+          await _supabase.from('dokumen_pendaftaran').update({
+            'catatan_admin': res.autoDraftedNote,
+          }).eq('id', doc.id);
+        }
+      }
+    }
+
+    if (summary.canAutoApproveEntireRegistration) {
+      await _supabase.from('pendaftaran').update({
+        'status': 'disetujui',
+      }).eq('id', pendaftaran.id);
+
+      await _supabase.from('notifikasi').insert({
+        'user_id': pendaftaran.userId,
+        'judul': 'Pendaftaran Yudisium Terverifikasi Otomatis 🎉',
+        'pesan': 'Seluruh dokumen persyaratan yudisium Anda telah diperiksa dan DISETUJUI otomatis oleh Sistem Verifikasi TIK PNL.',
+        'type': 'success',
+      });
+    }
+
+    await logActivity(
+      type: 'autoVerification',
+      actorName: 'Sistem Otomatis TIK',
+      targetName: mahasiswa.nama,
+      description: 'Auto-verifikasi selesai (Skor Kelayakan: ${summary.overallScore}%). Status: ${summary.canAutoApproveEntireRegistration ? "Disetujui Otomatis" : "Perlu Peninjauan"}',
+    );
+
+    return summary;
+  }
+
+  /// Jalankan auto-verifikasi massal untuk seluruh mahasiswa yang masuk
+  Future<Map<String, dynamic>> batchAutoVerifyAll() async {
+    final list = await getPendaftaranList();
+    int autoApprovedCount = 0;
+    int flaggedCount = 0;
+
+    for (final p in list) {
+      final summary = await autoVerifyRegistration(p);
+      if (summary.canAutoApproveEntireRegistration) {
+        autoApprovedCount++;
+      } else {
+        flaggedCount++;
+      }
+    }
+
+    return {
+      'total': list.length,
+      'auto_approved': autoApprovedCount,
+      'flagged': flaggedCount,
+    };
   }
 
   // ── Statistik ─────────────────────────────────────────────────

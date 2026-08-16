@@ -47,6 +47,23 @@ class _FormPendaftaranScreenState extends ConsumerState<FormPendaftaranScreen> {
   String _jenisKelamin = 'Laki-laki';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final p = ref.read(pendaftaranProvider).pendaftaran;
+      if (p != null) {
+        _ipkController.text = p.ipk > 0 ? p.ipk.toStringAsFixed(2) : '3.50';
+        _sksController.text = p.totalSks > 0 ? p.totalSks.toString() : '144';
+        _semesterController.text = p.semester > 0 ? p.semester.toString() : '8';
+        setState(() {
+          _jenjang = p.jenjang;
+          _tinggalDiAsrama = p.tinggalDiAsrama;
+        });
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _ipkController.dispose();
     _sksController.dispose();
@@ -110,6 +127,8 @@ class _FormPendaftaranScreenState extends ConsumerState<FormPendaftaranScreen> {
 
   Widget _buildStepIndicator(int currentStep) {
     final steps = ['Data\nAkademik', 'Dokumen\n1-6', 'Dokumen\n7-12', 'Biodata', 'Review'];
+    final hasDraft = ref.watch(pendaftaranProvider).pendaftaran != null;
+
     return Padding(
       padding: const EdgeInsets.symmetric(
           horizontal: AppTokens.spaceMD, vertical: AppTokens.spaceXS),
@@ -126,50 +145,62 @@ class _FormPendaftaranScreenState extends ConsumerState<FormPendaftaranScreen> {
           final idx = i ~/ 2;
           final isCompleted = idx < currentStep;
           final isCurrent = idx == currentStep;
-          return Column(
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isCompleted
-                      ? AppTokens.primaryGreenLight
-                      : isCurrent
-                          ? AppTokens.primaryGreenLight.withValues(alpha: 0.2)
-                          : Colors.white10,
-                  border: Border.all(
-                    color: isCompleted || isCurrent
-                        ? AppTokens.primaryGreenLight
-                        : Colors.white24,
-                    width: 2,
-                  ),
-                ),
-                child: isCompleted
-                    ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-                    : Center(
-                        child: Text(
-                          '${idx + 1}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: isCurrent
-                                ? AppTokens.primaryGreenLight
-                                : Colors.white24,
-                          ),
-                        ),
+          final canTap = hasDraft || idx <= currentStep;
+
+          return InkWell(
+            onTap: canTap
+                ? () => ref.read(pendaftaranProvider.notifier).setStep(idx)
+                : null,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Column(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isCompleted
+                          ? AppTokens.primaryGreenLight
+                          : isCurrent
+                              ? AppTokens.primaryGreenLight.withValues(alpha: 0.2)
+                              : Colors.white10,
+                      border: Border.all(
+                        color: isCompleted || isCurrent
+                            ? AppTokens.primaryGreenLight
+                            : Colors.white24,
+                        width: 2,
                       ),
+                    ),
+                    child: isCompleted
+                        ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                        : Center(
+                            child: Text(
+                              '${idx + 1}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isCurrent
+                                    ? AppTokens.primaryGreenLight
+                                    : Colors.white24,
+                              ),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    steps[idx],
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: isCompleted || isCurrent ? Colors.white60 : Colors.white24,
+                      fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              Text(
-                steps[idx],
-                style: TextStyle(
-                  fontSize: 9,
-                  color: isCompleted || isCurrent ? Colors.white60 : Colors.white24,
-                  fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+            ),
           );
         }),
       ),
@@ -321,7 +352,10 @@ class _FormPendaftaranScreenState extends ConsumerState<FormPendaftaranScreen> {
             GlassButton(
               label: 'Selanjutnya',
               icon: Icons.arrow_forward_rounded,
-              onPressed: _onStep0Next,
+              isLoading: ref.watch(pendaftaranProvider).isLoading,
+              onPressed: ref.watch(pendaftaranProvider).isLoading
+                  ? null
+                  : _onStep0Next,
             ),
           ],
         ),
@@ -329,12 +363,12 @@ class _FormPendaftaranScreenState extends ConsumerState<FormPendaftaranScreen> {
     );
   }
 
-  void _onStep0Next() {
+  Future<void> _onStep0Next() async {
     if (!_step1Key.currentState!.validate()) return;
     final user = ref.read(currentUserProvider);
     if (user == null) return;
 
-    ref.read(pendaftaranProvider.notifier).mulaiPendaftaran(
+    await ref.read(pendaftaranProvider.notifier).mulaiPendaftaran(
           userId: user.id,
           programStudi: user.programStudi,
           jenjang: _jenjang,
@@ -343,6 +377,24 @@ class _FormPendaftaranScreenState extends ConsumerState<FormPendaftaranScreen> {
           semester: int.parse(_semesterController.text),
           tinggalDiAsrama: _tinggalDiAsrama,
         );
+
+    final state = ref.read(pendaftaranProvider);
+    if (state.error != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF2E1020),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppTokens.error, width: 1.5),
+          ),
+          content: Text(
+            state.error!,
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
   }
 
   // ── Step 1 & 2: Dokumen ───────────────────────────────────────

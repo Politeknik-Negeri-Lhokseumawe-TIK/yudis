@@ -234,8 +234,9 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
         }
       }
 
-      // Reload state
+      // Reload state & otomatis lanjut ke Step 1 (Upload Dokumen 1-6)
       await loadExistingPendaftaran(userId);
+      state = state.copyWith(currentStep: 1, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'Gagal membuat pendaftaran: $e');
     }

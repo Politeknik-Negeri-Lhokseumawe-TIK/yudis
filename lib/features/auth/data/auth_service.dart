@@ -15,7 +15,6 @@ class AuthService {
     required String password,
   }) async {
     try {
-      // Coba login via email
       String email = nimOrEmail.trim().toLowerCase();
 
       // Jika input bukan email (tidak ada @), cari email berdasarkan NIM
@@ -26,7 +25,7 @@ class AuthService {
             .eq('nim', nimOrEmail.trim())
             .maybeSingle();
         if (nimResult == null) {
-          return AuthResult.failure('NIM tidak ditemukan.');
+          return AuthResult.failure('NIM $nimOrEmail belum terdaftar.');
         }
         email = nimResult['email'] as String;
       }
@@ -45,13 +44,30 @@ class AuthService {
           .from('users')
           .select()
           .eq('id', response.user!.id)
-          .single();
+          .maybeSingle();
 
-      return AuthResult.success(_rowToUser(userRow), response.session!.accessToken);
+      if (userRow == null) {
+        // Fallback: buat profil jika belum ada di tabel public.users
+        final meta = response.user!.userMetadata ?? {};
+        final fallbackData = {
+          'id': response.user!.id,
+          'nim': meta['nim'] ?? nimOrEmail.trim(),
+          'nama': meta['nama'] ?? response.user!.email?.split('@').first ?? 'Mahasiswa',
+          'email': response.user!.email ?? email,
+          'role': meta['role'] ?? 'mahasiswa',
+          'status_akun': 'pendingVerifikasi',
+          'program_studi': meta['program_studi'] ?? 'TRKJ',
+        };
+        await _supabase.from('users').upsert(fallbackData);
+        final createdRow = await _supabase.from('users').select().eq('id', response.user!.id).single();
+        return AuthResult.success(_rowToUser(createdRow), response.session?.accessToken ?? '');
+      }
+
+      return AuthResult.success(_rowToUser(userRow), response.session?.accessToken ?? '');
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e.message));
     } catch (e) {
-      return AuthResult.failure('Terjadi kesalahan. Coba lagi.');
+      return AuthResult.failure('Terjadi kesalahan: $e');
     }
   }
 
@@ -65,47 +81,58 @@ class AuthService {
     required String noHp,
   }) async {
     try {
+      final cleanEmail = email.trim().toLowerCase();
+      final cleanNim = nim.trim();
+
       // Cek duplikasi NIM
-      final existing = await _supabase
+      final existingNim = await _supabase
           .from('users')
-          .select('nim')
-          .eq('nim', nim.trim())
+          .select('nim, email')
+          .eq('nim', cleanNim)
           .maybeSingle();
-      if (existing != null) {
-        return AuthResult.failure('NIM $nim sudah terdaftar.');
+
+      if (existingNim != null && existingNim['email'] != cleanEmail) {
+        return AuthResult.failure('NIM $cleanNim sudah terdaftar dengan email lain.');
       }
 
-      // Buat akun di Supabase Auth
+      // Buat akun di Supabase Auth dengan metadata
       final response = await _supabase.auth.signUp(
-        email: email.trim().toLowerCase(),
+        email: cleanEmail,
         password: password,
+        data: {
+          'nim': cleanNim,
+          'nama': nama.trim(),
+          'role': 'mahasiswa',
+          'program_studi': programStudi.value,
+          'no_hp': noHp.trim(),
+        },
       );
 
       if (response.user == null) {
-        return AuthResult.failure('Gagal membuat akun. Coba lagi.');
+        return AuthResult.failure('Gagal membuat akun. Silakan periksa kembali email & password Anda.');
       }
 
       final uid = response.user!.id;
 
-      // Insert profil ke tabel users
+      // Insert/Upsert profil ke tabel users
       final userData = {
         'id': uid,
-        'nim': nim.trim(),
+        'nim': cleanNim,
         'nama': nama.trim(),
-        'email': email.trim().toLowerCase(),
+        'email': cleanEmail,
         'role': 'mahasiswa',
         'status_akun': 'pendingVerifikasi',
         'program_studi': programStudi.value,
         'no_hp': noHp.trim(),
       };
-      await _supabase.from('users').insert(userData);
+      await _supabase.from('users').upsert(userData);
 
       // Log aktivitas untuk admin
       await AdminRepository.logActivity(
         type: 'pendaftaranAkun',
         actorName: nama.trim(),
         targetName: 'Registrasi Akun Baru',
-        description: '$nama ($nim) mendaftar akun baru, menunggu verifikasi.',
+        description: '$nama ($cleanNim) mendaftar akun baru, menunggu verifikasi.',
       );
 
       final newUser = _rowToUser({...userData, 'created_at': DateTime.now().toIso8601String()});
@@ -113,7 +140,7 @@ class AuthService {
     } on AuthException catch (e) {
       return AuthResult.failure(_mapAuthError(e.message));
     } catch (e) {
-      return AuthResult.failure('Terjadi kesalahan saat registrasi.');
+      return AuthResult.failure('Gagal mendaftar: $e');
     }
   }
 

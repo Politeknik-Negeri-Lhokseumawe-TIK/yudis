@@ -10,5 +10,5 @@ library;
 /// 4. Salin "Project URL" ke [supabaseUrl]
 /// 5. Salin "anon public" key ke [supabaseAnonKey]
 
-const String supabaseUrl = 'https://GANTI_DENGAN_PROJECT_URL_ANDA.supabase.co';
-const String supabaseAnonKey = 'GANTI_DENGAN_ANON_KEY_ANDA';
+const String supabaseUrl = 'https://oojqbdnopdbolyuprmqa.supabase.co';
+const String supabaseAnonKey = 'sb_publishable_eo50rFNcCtRttuxEEB4C3A_qXh-Nxcl';

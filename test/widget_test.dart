@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:yudis/shared/widgets/glass_card.dart';
 import 'package:yudis/shared/widgets/glass_button.dart';
 import 'package:yudis/features/auth/domain/user_model.dart';
-import 'package:yudis/features/auth/data/auth_service.dart';
 import 'package:yudis/features/pendaftaran_yudisium/domain/pendaftaran_model.dart';
 import 'package:yudis/features/notifikasi/domain/notifikasi_model.dart';
 import 'package:yudis/features/pendaftaran_yudisium/presentation/widgets/prodi_badge_widget.dart';

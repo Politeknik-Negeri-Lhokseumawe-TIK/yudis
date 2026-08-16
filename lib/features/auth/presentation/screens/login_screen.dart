@@ -9,6 +9,7 @@ import '../../domain/user_model.dart';
 import '../../../../shared/widgets/animated_background.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../../../shared/widgets/glass_button.dart';
+import '../../../../shared/widgets/countdown_timer_widget.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../../core/responsive/breakpoints.dart';
 
@@ -879,12 +880,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 14),
-        // ── Deadline Pill Banner 26 Agustus 2026 ────────────────────────
+        // ── Deadline Pill Banner 26 Agustus 2026 dengan Live Countdown ────
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: const Color(0xFF1E1438).withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: AppTokens.accentGold.withValues(alpha: 0.45),
               width: 1.2,
@@ -897,53 +898,64 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ],
           ),
-          child: Row(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: AppTokens.accentGold,
-                  shape: BoxShape.circle,
-                ),
-              )
-                  .animate(onPlay: (c) => c.repeat(reverse: true))
-                  .scale(
-                      begin: const Offset(1, 1),
-                      end: const Offset(1.5, 1.5),
-                      duration: 1200.ms)
-                  .fade(begin: 0.6, end: 1.0, duration: 1200.ms),
-              const SizedBox(width: 8),
-              const Icon(
-                Icons.event_available_rounded,
-                color: AppTokens.accentGold,
-                size: 16,
-              ),
-              const SizedBox(width: 6),
-              RichText(
-                text: const TextSpan(
-                  style: TextStyle(
-                    fontSize: 12.5,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: AppTokens.accentGold,
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                      .animate(onPlay: (c) => c.repeat(reverse: true))
+                      .scale(
+                          begin: const Offset(1, 1),
+                          end: const Offset(1.5, 1.5),
+                          duration: 1200.ms)
+                      .fade(begin: 0.6, end: 1.0, duration: 1200.ms),
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.event_available_rounded,
+                    color: AppTokens.accentGold,
+                    size: 16,
                   ),
-                  children: [
-                    TextSpan(
-                      text: 'Batas Pendaftaran: ',
+                  const SizedBox(width: 6),
+                  RichText(
+                    text: const TextSpan(
                       style: TextStyle(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 12.5,
                       ),
+                      children: [
+                        TextSpan(
+                          text: 'Batas Pendaftaran: ',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        TextSpan(
+                          text: '26 Agustus 2026',
+                          style: TextStyle(
+                            color: AppTokens.accentGoldLight,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
                     ),
-                    TextSpan(
-                      text: '26 Agustus 2026',
-                      style: TextStyle(
-                        color: AppTokens.accentGoldLight,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              // Live Real-Time Counting Timer (Hari, Jam, Menit, Detik)
+              CountdownTimerWidget(
+                targetDate: DateTime(2026, 8, 26, 23, 59, 59),
+                compact: true,
               ),
             ],
           ),

@@ -43,20 +43,152 @@
   <meta property="og:type" content="website">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/jpeg" href="logo_pnl.jpg"/>
+  <link rel="apple-touch-icon" href="logo_pnl.jpg">
 
-  <title>Yudisium TIK PNL</title>
+  <title>Sistem Informasi Yudisium TIK PNL</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #070410;
+      color: #FFFFFF;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+    #loading-splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #1E1038 0%, #070410 70%);
+      z-index: 999999;
+      transition: opacity 0.5s ease-out;
+    }
+    .logo-wrapper {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-glow {
+      position: absolute;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.45) 0%, rgba(245, 158, 11, 0.2) 60%, transparent 80%);
+      animation: pulseGlow 2.5s infinite ease-in-out;
+    }
+    .logo-ring {
+      position: absolute;
+      width: 124px;
+      height: 124px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: #7C3AED;
+      border-right-color: #F59E0B;
+      animation: spinRing 2s linear infinite;
+    }
+    .logo-img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      z-index: 2;
+    }
+    .title-text {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #FFFFFF;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    .subtitle-text {
+      font-size: 13px;
+      font-weight: 500;
+      color: #F59E0B;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    .loader-bar {
+      width: 180px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+    .loader-progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 40%;
+      background: linear-gradient(90deg, #7C3AED, #F59E0B);
+      border-radius: 99px;
+      animation: indeterminate 1.5s infinite ease-in-out;
+    }
+    @keyframes spinRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.15); opacity: 1; }
+    }
+    @keyframes indeterminate {
+      0% { left: -40%; width: 40%; }
+      50% { left: 30%; width: 60%; }
+      100% { left: 100%; width: 40%; }
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <!-- Loading Splash Screen dengan Logo PNL -->
+  <div id="loading-splash">
+    <div class="logo-wrapper">
+      <div class="logo-glow"></div>
+      <div class="logo-ring"></div>
+      <img class="logo-img" src="logo_pnl.jpg" alt="Logo Politeknik Negeri Lhokseumawe" />
+    </div>
+    <div class="title-text">Sistem Informasi Yudisium</div>
+    <div class="subtitle-text">Jurusan TIK • Politeknik Negeri Lhokseumawe</div>
+    <div class="loader-bar">
+      <div class="loader-progress"></div>
+    </div>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var splash = document.getElementById('loading-splash');
+      if (splash) {
+        splash.style.opacity = '0';
+        setTimeout(function() {
+          splash.remove();
+        }, 500);
+      }
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

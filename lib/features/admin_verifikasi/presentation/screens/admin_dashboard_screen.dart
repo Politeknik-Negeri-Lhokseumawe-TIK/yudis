@@ -124,9 +124,9 @@ class AdminDashboardScreen extends ConsumerWidget {
                                   children: [
                                     ProdiProgressCard(
                                       totalPendaftar: adminState.pendaftaranList.length,
-                                      trkjCount: adminState.stats['trkj'] ?? 2,
-                                      trmmCount: adminState.stats['trmm'] ?? 1,
-                                      tiCount: adminState.stats['ti'] ?? 1,
+                                      trkjCount: adminState.stats['trkj'] ?? 0,
+                                      trmmCount: adminState.stats['trmm'] ?? 0,
+                                      tiCount: adminState.stats['ti'] ?? 0,
                                     ).animate().fadeIn(delay: 250.ms, duration: 400.ms),
                                     const SizedBox(height: AppTokens.spaceLG),
                                     _buildQuickActions(context)
@@ -157,9 +157,9 @@ class AdminDashboardScreen extends ConsumerWidget {
                         else ...[
                           ProdiProgressCard(
                             totalPendaftar: adminState.pendaftaranList.length,
-                            trkjCount: adminState.stats['trkj'] ?? 2,
-                            trmmCount: adminState.stats['trmm'] ?? 1,
-                            tiCount: adminState.stats['ti'] ?? 1,
+                            trkjCount: adminState.stats['trkj'] ?? 0,
+                            trmmCount: adminState.stats['trmm'] ?? 0,
+                            tiCount: adminState.stats['ti'] ?? 0,
                           ).animate().fadeIn(delay: 250.ms, duration: 400.ms),
                           const SizedBox(height: AppTokens.spaceLG),
                           _buildLiveActivityFeed(context, adminState)
@@ -263,9 +263,9 @@ class AdminDashboardScreen extends ConsumerWidget {
   Widget _buildLiveStatsGrid(BuildContext context, AdminState state) {
     final stats = state.stats;
     final total = state.pendaftaranList.length;
-    final disetujui = stats['disetujui'] ?? 1;
-    final pendingAkun = stats['pending_akun'] ?? 3;
-    final submitted = stats['submitted'] ?? 2;
+    final disetujui = stats['disetujui'] ?? 0;
+    final pendingAkun = stats['pending_akun'] ?? 0;
+    final submitted = stats['submitted'] ?? 0;
 
     return Row(
       children: [

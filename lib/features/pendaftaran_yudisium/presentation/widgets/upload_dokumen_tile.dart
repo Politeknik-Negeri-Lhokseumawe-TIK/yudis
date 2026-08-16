@@ -124,6 +124,8 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
           _localFileName = null;
           _localFileSize = null;
         });
+        final errorMsg = ref.read(pendaftaranProvider).error ??
+            'Terjadi kendala pada sistem penyimpanan cloud. Silakan coba lagi.';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: const Color(0xFF2E1020),
@@ -133,6 +135,7 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
               side: const BorderSide(color: AppTokens.error, width: 1.5),
             ),
             content: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(Icons.cloud_off_rounded, color: AppTokens.error, size: 22),
                 const SizedBox(width: 12),
@@ -151,10 +154,10 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'File "${file.name}" gagal diunggah. Periksa koneksi internet lalu coba lagi.',
+                        errorMsg,
                         style: const TextStyle(
                           color: Colors.white70,
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
                       ),
                     ],
@@ -162,7 +165,7 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
                 ),
               ],
             ),
-            duration: const Duration(seconds: 4),
+            duration: const Duration(seconds: 6),
           ),
         );
       } else {
@@ -179,8 +182,32 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
+  String _generateRecommendedFileName(String dokNama, String nim) {
+    final cleanNim = nim.isNotEmpty ? nim : 'NIM';
+    final cleanName = dokNama
+        .replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')
+        .replaceAll(RegExp(r'_+'), '_');
+    return '${cleanNim}_$cleanName.pdf';
+  }
+
+  bool _isNamePotentiallyMismatched(String fileName, String dokNama) {
+    final f = fileName.toLowerCase();
+    final d = dokNama.toLowerCase();
+    // Deteksi jika user upload surat pernyataan ke asrama/ijazah/ktp
+    if (f.contains('pernyataan') && !d.contains('pernyataan')) return true;
+    if (f.contains('ijazah') && !d.contains('ijazah')) return true;
+    if (f.contains('ktp') && !d.contains('ktp') && !d.contains('keluarga')) return true;
+    if (f.contains('transkrip') && !d.contains('transkrip')) return true;
+    if (f.contains('asrama') && !d.contains('asrama')) return true;
+    if (f.contains('foto') && !d.contains('foto')) return true;
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(currentUserProvider);
+    final nim = user?.nim ?? '';
+
     // Watch provider agar tile SELALU rebuild ketika state dokumen berubah
     final providerState = ref.watch(pendaftaranProvider);
     // Ambil dokumen terkini dari provider jika ada (sinkronisasi dengan optimistic update)
@@ -209,6 +236,9 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
     };
 
     final isUploaded = _isUploading || dok.isUploaded;
+    final recommendedFileName = _generateRecommendedFileName(dok.nama, nim);
+    final isMismatched = displayFileName != null &&
+        _isNamePotentiallyMismatched(displayFileName, dok.nama);
 
     return GlassCard(
       fillColor: isUploaded
@@ -296,11 +326,72 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
                             color: Colors.white54,
                           ),
                     ),
+                    const SizedBox(height: 6),
+                    // Panduan Nama Berkas yang Sesuai
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.03),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.info_outline_rounded,
+                              size: 12, color: AppTokens.primaryPurpleLight),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              'Format Disarankan: $recommendedFileName',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 10.5,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
+
+          // Peringatan jika nama file terdeteksi tidak cocok dengan slot dokumen
+          if (isMismatched) ...[
+            const SizedBox(height: AppTokens.spaceXS),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTokens.warning.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: AppTokens.warning.withValues(alpha: 0.4),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      color: AppTokens.warning, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Peringatan: File "$displayFileName" tampaknya tidak sesuai untuk slot "${dok.nama}". Pastikan Anda mengunggah berkas yang tepat.',
+                      style: const TextStyle(
+                        color: AppTokens.warning,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           // File info
           if (isUploaded && displayFileName != null) ...[

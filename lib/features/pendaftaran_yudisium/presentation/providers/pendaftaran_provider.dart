@@ -301,12 +301,22 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
       final storagePath =
           '$userId/${pendaftaran.id}/$dokumenId/berkas.$ext';
 
+      final mimeType = switch (ext) {
+        'pdf' => 'application/pdf',
+        'jpg' || 'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        _ => 'application/octet-stream',
+      };
+
       // Bug #1 Fix: konversi ke Uint8List agar uploadBinary bekerja
       final bytes = Uint8List.fromList(fileBytes);
       await _supabase.storage.from('dokumen').uploadBinary(
         storagePath,
         bytes,
-        fileOptions: const FileOptions(upsert: true),
+        fileOptions: FileOptions(
+          upsert: true,
+          contentType: mimeType,
+        ),
       );
 
       final fileUrl =
@@ -334,10 +344,9 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
       await loadExistingPendaftaran(userId);
       return true;
     } catch (e) {
-      // Bug #2 Fix: kembalikan false agar caller bisa tampilkan error ke UI
-      // Rollback optimistic update — kembalikan state ke kondisi sebelum upload
+      // Tangkap error detail dari Supabase Storage / Database
       await loadExistingPendaftaran(userId);
-      state = state.copyWith(error: 'Gagal upload dokumen: $e');
+      state = state.copyWith(error: 'Gagal upload dokumen ($fileName): $e');
       return false;
     }
   }

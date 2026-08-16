@@ -179,34 +179,57 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
 
       final periodeId = state.periode?.id ?? '';
 
-      // Insert pendaftaran ke Supabase
-      final insertedRow = await _supabase.from('pendaftaran').insert({
-        'user_id': userId,
-        'periode_id': periodeId,
-        'program_studi': programStudi.value,
-        'jenjang': jenjang.value,
-        'ipk': ipk,
-        'total_sks': totalSks,
-        'semester': semester,
-        'tinggal_di_asrama': tinggalDiAsrama,
-        'status': 'draft',
-        'biodata': {},
-      }).select().single();
+      // Cek apakah user sudah punya record pendaftaran draft
+      final existingDraft = await _supabase
+          .from('pendaftaran')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'draft')
+          .maybeSingle();
 
-      final pendaftaranId = insertedRow['id'] as String;
+      String pendaftaranId;
+      if (existingDraft != null) {
+        pendaftaranId = existingDraft['id'] as String;
+        // Update draft yang ada
+        await _supabase.from('pendaftaran').update({
+          'periode_id': periodeId,
+          'program_studi': programStudi.value,
+          'jenjang': jenjang.value,
+          'ipk': ipk,
+          'total_sks': totalSks,
+          'semester': semester,
+          'tinggal_di_asrama': tinggalDiAsrama,
+        }).eq('id', pendaftaranId);
+      } else {
+        // Insert pendaftaran baru ke Supabase
+        final insertedRow = await _supabase.from('pendaftaran').insert({
+          'user_id': userId,
+          'periode_id': periodeId,
+          'program_studi': programStudi.value,
+          'jenjang': jenjang.value,
+          'ipk': ipk,
+          'total_sks': totalSks,
+          'semester': semester,
+          'tinggal_di_asrama': tinggalDiAsrama,
+          'status': 'draft',
+          'biodata': {},
+        }).select().single();
 
-      // Insert dokumen per template ke tabel dokumen_pendaftaran
-      final dokumenInserts = filteredTemplates.map((t) => {
-        'pendaftaran_id': pendaftaranId,
-        'kode': t.kode,
-        'nama': t.nama,
-        'deskripsi': t.deskripsi,
-        'is_wajib': t.isWajib,
-        'status': 'belum_upload',
-      }).toList();
+        pendaftaranId = insertedRow['id'] as String;
 
-      if (dokumenInserts.isNotEmpty) {
-        await _supabase.from('dokumen_pendaftaran').insert(dokumenInserts);
+        // Insert dokumen per template ke tabel dokumen_pendaftaran
+        final dokumenInserts = filteredTemplates.map((t) => {
+          'pendaftaran_id': pendaftaranId,
+          'kode': t.kode,
+          'nama': t.nama,
+          'deskripsi': t.deskripsi,
+          'is_wajib': t.isWajib,
+          'status': 'belum_upload',
+        }).toList();
+
+        if (dokumenInserts.isNotEmpty) {
+          await _supabase.from('dokumen_pendaftaran').insert(dokumenInserts);
+        }
       }
 
       // Reload state

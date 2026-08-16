@@ -28,20 +28,10 @@ class UploadDokumenTile extends ConsumerStatefulWidget {
 
 class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
   bool _isUploading = false;
-
-  Color get _statusColor => switch (widget.dokumen.status) {
-        StatusDokumen.belumUpload => Colors.white38,
-        StatusDokumen.menunggu   => AppTokens.warning,
-        StatusDokumen.valid      => AppTokens.success,
-        StatusDokumen.tidakValid => AppTokens.error,
-      };
-
-  IconData get _statusIcon => switch (widget.dokumen.status) {
-        StatusDokumen.belumUpload => Icons.upload_file_rounded,
-        StatusDokumen.menunggu   => Icons.hourglass_top_rounded,
-        StatusDokumen.valid      => Icons.check_circle_rounded,
-        StatusDokumen.tidakValid => Icons.cancel_rounded,
-      };
+  // State lokal untuk nama & ukuran file yang baru dipilih
+  // agar tampil SEGERA tanpa menunggu rebuild dari provider
+  String? _localFileName;
+  int? _localFileSize;
 
   Future<void> _pickFile() async {
     if (_isUploading) return;
@@ -109,7 +99,13 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
     }
 
     final userId = ref.read(authProvider).user?.id ?? '';
-    setState(() => _isUploading = true);
+
+    // Tampilkan nama file secara lokal segera setelah dipilih
+    setState(() {
+      _isUploading = true;
+      _localFileName = file.name;
+      _localFileSize = file.size;
+    });
 
     // Bug #2 Fix: tangkap bool return, tampilkan error jika gagal
     final success = await ref.read(pendaftaranProvider.notifier).uploadDokumen(
@@ -121,8 +117,13 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
         );
 
     if (mounted) {
-      setState(() => _isUploading = false);
       if (!success) {
+        // Reset local state jika gagal
+        setState(() {
+          _isUploading = false;
+          _localFileName = null;
+          _localFileSize = null;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: const Color(0xFF2E1020),
@@ -165,6 +166,7 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
           ),
         );
       } else {
+        setState(() => _isUploading = false);
         widget.onStatusChanged?.call();
       }
     }
@@ -179,15 +181,41 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
 
   @override
   Widget build(BuildContext context) {
-    final dok = widget.dokumen;
-    final isUploaded = dok.isUploaded;
+    // Watch provider agar tile SELALU rebuild ketika state dokumen berubah
+    final providerState = ref.watch(pendaftaranProvider);
+    // Ambil dokumen terkini dari provider jika ada (sinkronisasi dengan optimistic update)
+    final dok = providerState.pendaftaran?.dokumen
+            .where((d) => d.id == widget.dokumen.id)
+            .firstOrNull ??
+        widget.dokumen;
+
+    // Nama file: prioritaskan state lokal (dipilih baru) > dari provider
+    final displayFileName = _localFileName ?? dok.fileName;
+    final displayFileSize = _localFileSize ?? dok.fileSize;
+
+    // Status dinamis dari dokumen terkini
+    final currentStatus = _isUploading ? StatusDokumen.menunggu : dok.status;
+    final statusColor = switch (currentStatus) {
+      StatusDokumen.belumUpload => Colors.white38,
+      StatusDokumen.menunggu   => AppTokens.warning,
+      StatusDokumen.valid      => AppTokens.success,
+      StatusDokumen.tidakValid => AppTokens.error,
+    };
+    final statusIcon = switch (currentStatus) {
+      StatusDokumen.belumUpload => Icons.upload_file_rounded,
+      StatusDokumen.menunggu   => Icons.hourglass_top_rounded,
+      StatusDokumen.valid      => Icons.check_circle_rounded,
+      StatusDokumen.tidakValid => Icons.cancel_rounded,
+    };
+
+    final isUploaded = _isUploading || dok.isUploaded;
 
     return GlassCard(
       fillColor: isUploaded
-          ? _statusColor.withValues(alpha: 0.05)
+          ? statusColor.withValues(alpha: 0.05)
           : Colors.white.withValues(alpha: 0.04),
       borderColor: isUploaded
-          ? _statusColor.withValues(alpha: 0.3)
+          ? statusColor.withValues(alpha: 0.3)
           : Colors.white.withValues(alpha: 0.1),
       padding: const EdgeInsets.all(AppTokens.spaceMD),
       child: Column(
@@ -201,7 +229,7 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: _statusColor.withValues(alpha: 0.15),
+                  color: statusColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppTokens.radiusSM),
                 ),
                 child: _isUploading
@@ -209,10 +237,10 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
                         padding: const EdgeInsets.all(8.0),
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: _statusColor,
+                          color: statusColor,
                         ),
                       )
-                    : Icon(_statusIcon, color: _statusColor, size: 18),
+                    : Icon(statusIcon, color: statusColor, size: 18),
               ),
               const SizedBox(width: AppTokens.spaceSM),
 
@@ -256,8 +284,8 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
                         const SizedBox(width: 6),
                         // Status chip
                         _StatusChip(
-                          label: dok.status.label,
-                          color: _statusColor,
+                          label: currentStatus.label,
+                          color: statusColor,
                         ),
                       ],
                     ),
@@ -275,7 +303,7 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
           ),
 
           // File info
-          if (isUploaded && dok.fileName != null) ...[
+          if (isUploaded && displayFileName != null) ...[
             const SizedBox(height: AppTokens.spaceXS),
             const Divider(color: Colors.white10),
             const SizedBox(height: AppTokens.spaceXXS),
@@ -285,16 +313,16 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    dok.fileName!,
+                    displayFileName,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.white54,
                         ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (dok.fileSize != null)
+                if (displayFileSize != null)
                   Text(
-                    _formatSize(dok.fileSize),
+                    _formatSize(displayFileSize),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.white38,
                         ),
@@ -345,7 +373,7 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
                           builder: (ctx) => DocumentPreviewDialog(
                             title: dok.nama,
                             fileUrl: dok.filePath!,
-                            fileName: dok.fileName,
+                            fileName: displayFileName ?? dok.fileName,
                           ),
                         );
                       },

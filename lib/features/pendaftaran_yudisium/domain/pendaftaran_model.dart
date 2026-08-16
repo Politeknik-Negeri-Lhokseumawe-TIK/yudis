@@ -102,8 +102,9 @@ class DokumenSyarat {
   String? catatanAdmin;
   bool ada; // checkbox ADA/TIDAK ADA
 
-  bool get isUploaded =>
-      status != StatusDokumen.belumUpload && filePath != null;
+  // isUploaded = true jika status bukan belumUpload
+  // filePath boleh null saat optimistic update (sebelum URL Supabase kembali)
+  bool get isUploaded => status != StatusDokumen.belumUpload;
 
   String get maxSizeFormatted {
     if (maxSizeBytes >= 1048576) {

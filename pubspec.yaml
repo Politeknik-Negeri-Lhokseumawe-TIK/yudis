@@ -62,6 +62,9 @@ dependencies:
   crypto: ^3.0.6
   encrypt: ^5.0.3
 
+  # Backend Real-Time (Supabase: Auth + PostgreSQL + Storage + Realtime)
+  supabase_flutter: ^2.9.0
+
   # Staggered list animations
   flutter_staggered_animations: ^1.1.1
 

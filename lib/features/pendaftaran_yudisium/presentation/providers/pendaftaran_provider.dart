@@ -1,17 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/pendaftaran_model.dart';
-import '../../domain/template_syarat_model.dart';
 import '../../../auth/domain/user_model.dart';
-
-// ── Mock Periode ──────────────────────────────────────────────
-final mockPeriode = PeriodeYudisium(
-  id: 'p2025-2',
-  nama: 'Yudisium Semester Genap 2025/2026',
-  tanggalMulai: DateTime(2026, 8, 1),
-  tanggalSelesai: DateTime(2026, 8, 26),
-  isAktif: true,
-  deskripsi: 'Periode yudisium semester genap TA 2025/2026',
-);
+import '../../../admin_verifikasi/data/admin_repository.dart';
 
 // ── Pendaftaran State ─────────────────────────────────────────
 class PendaftaranState {
@@ -61,12 +52,109 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
     _loadPeriode();
   }
 
-  void _loadPeriode() {
-    state = state.copyWith(periode: mockPeriode);
+  static SupabaseClient get _supabase => Supabase.instance.client;
+
+  /// Muat periode yudisium aktif dari Supabase
+  Future<void> _loadPeriode() async {
+    state = state.copyWith(isLoading: true);
+    try {
+      final row = await _supabase
+          .from('periode_yudisium')
+          .select()
+          .eq('is_aktif', true)
+          .order('tanggal_selesai', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (row != null) {
+        final periode = PeriodeYudisium(
+          id: row['id'] as String,
+          nama: row['nama'] as String,
+          tanggalMulai: DateTime.parse(row['tanggal_mulai'] as String),
+          tanggalSelesai: DateTime.parse(row['tanggal_selesai'] as String),
+          isAktif: row['is_aktif'] as bool,
+          deskripsi: row['deskripsi'] as String?,
+        );
+        state = state.copyWith(periode: periode, isLoading: false);
+      } else {
+        state = state.copyWith(isLoading: false, error: 'Tidak ada periode yudisium aktif.');
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Gagal memuat periode: $e');
+    }
   }
 
-  /// Inisialisasi pendaftaran baru
-  PendaftaranYudisium _buatPendaftaranBaru({
+  /// Muat data pendaftaran yang sudah ada milik user dari Supabase
+  Future<void> loadExistingPendaftaran(String userId) async {
+    state = state.copyWith(isLoading: true);
+    try {
+      final row = await _supabase
+          .from('pendaftaran')
+          .select('*, dokumen_pendaftaran(*)')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+
+      if (row != null) {
+        final dokumenRows = row['dokumen_pendaftaran'] as List? ?? [];
+        final dokumen = dokumenRows.map((d) {
+          final dm = d as Map<String, dynamic>;
+          return DokumenSyarat(
+            id: dm['id'] as String,
+            kode: dm['kode'] as String,
+            nama: dm['nama'] as String,
+            deskripsi: dm['deskripsi'] as String? ?? '',
+            isWajib: dm['is_wajib'] as bool? ?? true,
+            status: StatusDokumen.values.firstWhere(
+              (s) => s.value == (dm['status'] ?? 'belum_upload'),
+              orElse: () => StatusDokumen.belumUpload,
+            ),
+            filePath: dm['file_url'] as String?,
+            fileName: dm['file_name'] as String?,
+            fileSize: dm['file_size'] as int?,
+            catatanAdmin: dm['catatan_admin'] as String?,
+          );
+        }).toList();
+
+        final pendaftaran = PendaftaranYudisium(
+          id: row['id'] as String,
+          userId: row['user_id'] as String,
+          periodeId: row['periode_id'] as String? ?? '',
+          programStudi: ProgramStudi.values.firstWhere(
+            (e) => e.value == row['program_studi'],
+            orElse: () => ProgramStudi.ti,
+          ),
+          jenjang: Jenjang.values.firstWhere(
+            (e) => e.value == row['jenjang'],
+            orElse: () => Jenjang.d4,
+          ),
+          ipk: (row['ipk'] as num?)?.toDouble() ?? 0.0,
+          totalSks: row['total_sks'] as int? ?? 0,
+          semester: row['semester'] as int? ?? 0,
+          tinggalDiAsrama: row['tinggal_di_asrama'] as bool? ?? false,
+          dokumen: dokumen,
+          biodata: _mapToBiodata(row['biodata'] as Map<String, dynamic>?),
+          status: StatusPendaftaran.values.firstWhere(
+            (s) => s.value == (row['status'] ?? 'draft'),
+            orElse: () => StatusPendaftaran.draft,
+          ),
+          submittedAt: row['submitted_at'] != null
+              ? DateTime.tryParse(row['submitted_at'] as String)
+              : null,
+        );
+
+        state = state.copyWith(pendaftaran: pendaftaran, isLoading: false, currentStep: 1);
+      } else {
+        state = state.copyWith(isLoading: false);
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Gagal memuat pendaftaran: $e');
+    }
+  }
+
+  /// Inisialisasi pendaftaran baru — insert ke Supabase
+  Future<void> mulaiPendaftaran({
     required String userId,
     required ProgramStudi programStudi,
     required Jenjang jenjang,
@@ -74,84 +162,104 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
     required int totalSks,
     required int semester,
     required bool tinggalDiAsrama,
-  }) {
-    final dokumen = mockTemplateDokumen.map((t) => t.toDokumenSyarat()).toList();
-    return PendaftaranYudisium(
-      id: 'pend_${DateTime.now().millisecondsSinceEpoch}',
-      userId: userId,
-      periodeId: mockPeriode.id,
-      programStudi: programStudi,
-      jenjang: jenjang,
-      ipk: ipk,
-      totalSks: totalSks,
-      semester: semester,
-      tinggalDiAsrama: tinggalDiAsrama,
-      dokumen: dokumen,
-      biodata: const BiodataCalon(),
-    );
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      // Ambil template dokumen dari Supabase
+      final adminRepo = AdminRepository();
+      final templates = await adminRepo.getTemplateDokumen();
+
+      // Filter dokumen berdasarkan kondisi jenjang & asrama
+      final filteredTemplates = templates.where((t) {
+        if (t.kondisiJenjang != null && t.kondisiJenjang != jenjang) return false;
+        if (t.kondisiAsrama != null && t.kondisiAsrama != tinggalDiAsrama) return false;
+        return true;
+      }).toList();
+
+      final periodeId = state.periode?.id ?? '';
+
+      // Insert pendaftaran ke Supabase
+      final insertedRow = await _supabase.from('pendaftaran').insert({
+        'user_id': userId,
+        'periode_id': periodeId,
+        'program_studi': programStudi.value,
+        'jenjang': jenjang.value,
+        'ipk': ipk,
+        'total_sks': totalSks,
+        'semester': semester,
+        'tinggal_di_asrama': tinggalDiAsrama,
+        'status': 'draft',
+        'biodata': {},
+      }).select().single();
+
+      final pendaftaranId = insertedRow['id'] as String;
+
+      // Insert dokumen per template ke tabel dokumen_pendaftaran
+      final dokumenInserts = filteredTemplates.map((t) => {
+        'pendaftaran_id': pendaftaranId,
+        'kode': t.kode,
+        'nama': t.nama,
+        'deskripsi': t.deskripsi,
+        'is_wajib': t.isWajib,
+        'status': 'belum_upload',
+      }).toList();
+
+      if (dokumenInserts.isNotEmpty) {
+        await _supabase.from('dokumen_pendaftaran').insert(dokumenInserts);
+      }
+
+      // Reload state
+      await loadExistingPendaftaran(userId);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: 'Gagal membuat pendaftaran: $e');
+    }
   }
 
-  void mulaiPendaftaran({
-    required String userId,
-    required ProgramStudi programStudi,
-    required Jenjang jenjang,
-    required double ipk,
-    required int totalSks,
-    required int semester,
-    required bool tinggalDiAsrama,
-  }) {
-    final pendaftaran = _buatPendaftaranBaru(
-      userId: userId,
-      programStudi: programStudi,
-      jenjang: jenjang,
-      ipk: ipk,
-      totalSks: totalSks,
-      semester: semester,
-      tinggalDiAsrama: tinggalDiAsrama,
-    );
-    state = state.copyWith(pendaftaran: pendaftaran, currentStep: 1);
-  }
-
-  /// Upload dokumen (mock)
+  /// Upload dokumen ke Supabase Storage + update record
   Future<void> uploadDokumen({
     required String dokumenId,
-    required String filePath,
+    required List<int> fileBytes,
     required String fileName,
     required int fileSize,
+    required String userId,
   }) async {
     final pendaftaran = state.pendaftaran;
     if (pendaftaran == null) return;
 
-    // Simulate upload
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      // Upload ke Supabase Storage bucket 'dokumen'
+      final storagePath = '$userId/${pendaftaran.id}/$dokumenId/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+      await _supabase.storage.from('dokumen').uploadBinary(
+        storagePath,
+        fileBytes as dynamic,
+        fileOptions: const FileOptions(upsert: true),
+      );
 
-    final updatedDokumen = pendaftaran.dokumen.map((d) {
-      if (d.id == dokumenId) {
-        return d.copyWith(
-          status: StatusDokumen.menunggu,
-          filePath: filePath,
-          fileName: fileName,
-          fileSize: fileSize,
-        );
-      }
-      return d;
-    }).toList();
+      final fileUrl = _supabase.storage.from('dokumen').getPublicUrl(storagePath);
 
-    final updated = PendaftaranYudisium(
-      id: pendaftaran.id,
-      userId: pendaftaran.userId,
-      periodeId: pendaftaran.periodeId,
-      programStudi: pendaftaran.programStudi,
-      jenjang: pendaftaran.jenjang,
-      ipk: pendaftaran.ipk,
-      totalSks: pendaftaran.totalSks,
-      semester: pendaftaran.semester,
-      tinggalDiAsrama: pendaftaran.tinggalDiAsrama,
-      dokumen: updatedDokumen,
-      biodata: pendaftaran.biodata,
-      status: pendaftaran.status,
-    );
-    state = state.copyWith(pendaftaran: updated);
+      // Update record di Supabase
+      await _supabase.from('dokumen_pendaftaran').update({
+        'status': 'menunggu',
+        'file_url': fileUrl,
+        'file_name': fileName,
+        'file_size': fileSize,
+        'uploaded_at': DateTime.now().toIso8601String(),
+      }).eq('id', dokumenId);
+
+      // Log aktivitas
+      final dok = pendaftaran.dokumen.firstWhere((d) => d.id == dokumenId);
+      await AdminRepository.logActivity(
+        type: 'uploadDokumen',
+        actorName: '',
+        targetName: dok.nama,
+        description: 'Mahasiswa mengupload dokumen: $fileName',
+      );
+
+      // Refresh pendaftaran
+      await loadExistingPendaftaran(userId);
+    } catch (e) {
+      state = state.copyWith(error: 'Gagal upload dokumen: $e');
+    }
   }
 
   void updateBiodata(BiodataCalon biodata) {
@@ -176,28 +284,79 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
 
   void setStep(int step) => state = state.copyWith(currentStep: step);
 
+  /// Submit pendaftaran — update status di Supabase
   Future<bool> submit() async {
     final p = state.pendaftaran;
     if (p == null) return false;
 
     state = state.copyWith(isSubmitting: true, clearError: true);
-    await Future.delayed(const Duration(milliseconds: 1200));
+    try {
+      final now = DateTime.now();
 
-    p.status = StatusPendaftaran.submitted;
-    p.submittedAt = DateTime.now();
+      // Simpan biodata ke Supabase
+      await _supabase.from('pendaftaran').update({
+        'status': 'submitted',
+        'submitted_at': now.toIso8601String(),
+        'biodata': _biodataToMap(p.biodata),
+      }).eq('id', p.id);
 
-    state = state.copyWith(
-      isSubmitting: false,
-      submitSuccess: true,
-      pendaftaran: p,
-    );
-    return true;
+      // Log aktivitas
+      await AdminRepository.logActivity(
+        type: 'pendaftaranBaru',
+        actorName: '',
+        targetName: 'Pendaftaran ${p.programStudi.value}',
+        description: 'Mahasiswa mengajukan berkas pendaftaran yudisium.',
+      );
+
+      p.status = StatusPendaftaran.submitted;
+      p.submittedAt = now;
+
+      state = state.copyWith(
+        isSubmitting: false,
+        submitSuccess: true,
+        pendaftaran: p,
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isSubmitting: false,
+        error: 'Gagal submit pendaftaran: $e',
+      );
+      return false;
+    }
   }
 
   void reset() {
     state = const PendaftaranState();
     _loadPeriode();
   }
+
+  static BiodataCalon _mapToBiodata(Map<String, dynamic>? data) {
+    if (data == null) return const BiodataCalon();
+    return BiodataCalon(
+      tempatLahir: data['tempat_lahir'] as String?,
+      tanggalLahir: data['tanggal_lahir'] != null
+          ? DateTime.tryParse(data['tanggal_lahir'] as String)
+          : null,
+      jenisKelamin: data['jenis_kelamin'] as String?,
+      namaAyah: data['nama_ayah'] as String?,
+      namaIbu: data['nama_ibu'] as String?,
+      judulTga: data['judul_tga'] as String?,
+      pembimbing1: data['pembimbing_1'] as String?,
+      pembimbing2: data['pembimbing_2'] as String?,
+    );
+  }
+
+  static Map<String, dynamic> _biodataToMap(BiodataCalon b) => {
+    'tempat_lahir': b.tempatLahir,
+    'tanggal_lahir': b.tanggalLahir?.toIso8601String(),
+    'jenis_kelamin': b.jenisKelamin,
+    'nama_ayah': b.namaAyah,
+    'nama_ibu': b.namaIbu,
+    'judul_tga': b.judulTga,
+    'pembimbing_1': b.pembimbing1,
+    'pembimbing_2': b.pembimbing2,
+  };
 }
 
 // ── Providers ─────────────────────────────────────────────────

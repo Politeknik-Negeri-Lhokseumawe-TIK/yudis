@@ -33,7 +33,11 @@ class TemplateSyaratDokumen {
       );
 }
 
-/// Mock template syarat dokumen (12 dokumen standar TIK PNL)
+// Template dokumen tidak lagi hardcoded.
+// Data diambil dari Supabase tabel `template_dokumen` via AdminRepository.getTemplateDokumen()
+// Lihat: lib/features/admin_verifikasi/data/admin_repository.dart
+
+/// [DEPRECATED] — hanya digunakan sebagai fallback offline jika Supabase belum dikonfigurasi
 final List<TemplateSyaratDokumen> mockTemplateDokumen = [
   const TemplateSyaratDokumen(
     id: 't01',

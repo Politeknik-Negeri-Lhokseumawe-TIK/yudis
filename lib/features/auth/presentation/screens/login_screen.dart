@@ -630,8 +630,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         return;
                                       }
                                       setDialogState(() => isLoading = true);
-                                      await Future.delayed(const Duration(milliseconds: 400));
-                                      final found = AuthService.findMahasiswaByNimOrEmail(query);
+                                      final found = await AuthService.findMahasiswaByNimOrEmail(query);
                                       if (found == null) {
                                         setDialogState(() {
                                           isLoading = false;
@@ -668,18 +667,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       }
 
                                       setDialogState(() => isLoading = true);
-                                      await Future.delayed(const Duration(milliseconds: 600));
 
-                                      AuthService.resetPassword(
-                                        nimOrEmail: verifiedUser!.nim,
-                                        newPassword: newPass,
+                                      // Kirim email reset password via Supabase Auth
+                                      await AuthService.resetPassword(
+                                        nimOrEmail: verifiedUser!.email,
                                       );
 
                                       if (!ctx.mounted) return;
                                       Navigator.of(ctx).pop();
-
-                                      _nimController.text = verifiedUser!.nim;
-                                      _passwordController.text = newPass;
 
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(

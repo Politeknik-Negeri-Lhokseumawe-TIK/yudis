@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 /// Model notifikasi in-app
 class Notifikasi {
   const Notifikasi({
@@ -15,6 +17,20 @@ class Notifikasi {
   final DateTime waktu;
   final bool isRead;
   final NotifikasiType type;
+
+  factory Notifikasi.fromRow(Map<String, dynamic> row) {
+    return Notifikasi(
+      id: row['id'] as String,
+      judul: row['judul'] as String,
+      pesan: row['pesan'] as String,
+      waktu: DateTime.tryParse(row['created_at'] as String? ?? '') ?? DateTime.now(),
+      isRead: row['is_read'] as bool? ?? false,
+      type: NotifikasiType.values.firstWhere(
+        (t) => t.name == (row['type'] ?? 'info'),
+        orElse: () => NotifikasiType.info,
+      ),
+    );
+  }
 }
 
 enum NotifikasiType {
@@ -24,38 +40,62 @@ enum NotifikasiType {
   error,
 }
 
-/// Mock notifikasi data
-final List<Notifikasi> mockNotifikasi = [
-  Notifikasi(
-    id: 'n1',
-    judul: 'Akun Diverifikasi',
-    pesan: 'Selamat! Akun Anda telah diverifikasi oleh admin. Anda dapat mulai mendaftar yudisium.',
-    waktu: DateTime.now().subtract(const Duration(hours: 2)),
-    isRead: false,
-    type: NotifikasiType.success,
-  ),
-  Notifikasi(
-    id: 'n2',
-    judul: 'Periode Yudisium Dibuka',
-    pesan: 'Periode yudisium Semester Genap 2025/2026 telah dibuka. Batas akhir pendaftaran: 26 Agustus 2026. Segera lengkapi berkas!',
-    waktu: DateTime.now().subtract(const Duration(days: 1)),
-    isRead: true,
-    type: NotifikasiType.info,
-  ),
-  Notifikasi(
-    id: 'n3',
-    judul: 'Dokumen Perlu Revisi',
-    pesan: 'Dokumen "Surat Bebas Perpustakaan" ditandai tidak valid oleh admin. Silakan upload ulang.',
-    waktu: DateTime.now().subtract(const Duration(days: 2)),
-    isRead: true,
-    type: NotifikasiType.warning,
-  ),
-  Notifikasi(
-    id: 'n4',
-    judul: 'Pendaftaran Diterima',
-    pesan: 'Pendaftaran yudisium Anda telah disetujui. Silakan unduh kartu peserta yudisium.',
-    waktu: DateTime.now().subtract(const Duration(days: 5)),
-    isRead: true,
-    type: NotifikasiType.success,
-  ),
-];
+/// Repository untuk mengambil notifikasi real-time dari Supabase
+class NotifikasiRepository {
+  static SupabaseClient get _supabase => Supabase.instance.client;
+
+  /// Ambil semua notifikasi milik user
+  static Future<List<Notifikasi>> getNotifikasi(String userId) async {
+    final rows = await _supabase
+        .from('notifikasi')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at', ascending: false)
+        .limit(50);
+
+    return (rows as List)
+        .map((r) => Notifikasi.fromRow(r as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Stream notifikasi real-time (Supabase Realtime)
+  static Stream<List<Notifikasi>> notifikasiStream(String userId) {
+    return _supabase
+        .from('notifikasi')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .order('created_at', ascending: false)
+        .limit(50)
+        .map((rows) => rows
+            .map((r) => Notifikasi.fromRow(r))
+            .toList());
+  }
+
+  /// Tandai notifikasi sebagai sudah dibaca
+  static Future<void> markAsRead(String notifId) async {
+    await _supabase
+        .from('notifikasi')
+        .update({'is_read': true})
+        .eq('id', notifId);
+  }
+
+  /// Tandai semua notifikasi user sebagai sudah dibaca
+  static Future<void> markAllAsRead(String userId) async {
+    await _supabase
+        .from('notifikasi')
+        .update({'is_read': true})
+        .eq('user_id', userId)
+        .eq('is_read', false);
+  }
+
+  /// Hitung jumlah notifikasi yang belum dibaca
+  static Future<int> getUnreadCount(String userId) async {
+    final result = await _supabase
+        .from('notifikasi')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('is_read', false)
+        .count(CountOption.exact);
+    return result.count;
+  }
+}

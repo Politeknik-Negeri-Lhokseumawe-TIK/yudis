@@ -6,6 +6,7 @@ import '../../domain/pendaftaran_model.dart';
 import '../providers/pendaftaran_provider.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../../shared/widgets/glass_card.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
 /// Tile upload dokumen dengan status chip dan progress
 class UploadDokumenTile extends ConsumerStatefulWidget {
@@ -47,19 +48,23 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-      withData: false,
+      withData: true, // Perlu bytes untuk Supabase Storage upload
     );
 
     if (result == null || result.files.isEmpty) return;
 
     final file = result.files.first;
+    if (file.bytes == null) return;
+
+    final userId = ref.read(authProvider).user?.id ?? '';
     setState(() => _isUploading = true);
 
     await ref.read(pendaftaranProvider.notifier).uploadDokumen(
           dokumenId: widget.dokumen.id,
-          filePath: file.path ?? file.name,
+          fileBytes: file.bytes!,
           fileName: file.name,
           fileSize: file.size,
+          userId: userId,
         );
 
     if (mounted) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../domain/notifikasi_model.dart';
 import '../../../../shared/widgets/animated_background.dart';
@@ -9,12 +10,22 @@ import '../../../../shared/widgets/glass_app_bar.dart';
 import '../../../../shared/widgets/sidebar_aware_scaffold.dart';
 import '../../../../core/responsive/breakpoints.dart';
 import '../../../../core/theme/app_tokens.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
-class NotifikasiScreen extends StatelessWidget {
+// ── Provider untuk notifikasi user ───────────────────────────
+final notifikasiStreamProvider = StreamProvider.autoDispose<List<Notifikasi>>((ref) {
+  final user = ref.watch(authProvider).user;
+  if (user == null) return const Stream.empty();
+  return NotifikasiRepository.notifikasiStream(user.id);
+});
+
+class NotifikasiScreen extends ConsumerWidget {
   const NotifikasiScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifAsync = ref.watch(notifikasiStreamProvider);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: SidebarAwareScaffold(
@@ -23,43 +34,55 @@ class NotifikasiScreen extends StatelessWidget {
         body: AnimatedBackground(
           child: SafeArea(
             top: !context.isDesktop && !context.isTablet,
-            child: mockNotifikasi.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.notifications_off_outlined,
-                            color: Colors.white24, size: 64),
-                        const SizedBox(height: AppTokens.spaceMD),
-                        Text(
-                          'Tidak ada notifikasi',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(color: Colors.white38),
+            child: notifAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(color: Colors.white54),
+              ),
+              error: (e, _) => Center(
+                child: Text('Gagal memuat notifikasi',
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyLarge
+                        ?.copyWith(color: Colors.white54)),
+              ),
+              data: (notifs) => notifs.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.notifications_off_outlined,
+                              color: Colors.white24, size: 64),
+                          const SizedBox(height: AppTokens.spaceMD),
+                          Text(
+                            'Tidak ada notifikasi',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyLarge
+                                ?.copyWith(color: Colors.white38),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 800),
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(AppTokens.spaceMD),
+                          physics: const ClampingScrollPhysics(),
+                          itemCount: notifs.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: AppTokens.spaceSM),
+                          itemBuilder: (ctx, i) {
+                            final notif = notifs[i];
+                            return _NotifTile(notif: notif)
+                                .animate()
+                                .fadeIn(delay: (i * 80).ms, duration: 300.ms)
+                                .slideX(begin: 0.05, end: 0);
+                          },
                         ),
-                      ],
-                    ),
-                  )
-                : Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 800),
-                      child: ListView.separated(
-                        padding: const EdgeInsets.all(AppTokens.spaceMD),
-                        physics: const ClampingScrollPhysics(),
-                        itemCount: mockNotifikasi.length,
-                        separatorBuilder: (_, _) =>
-                            const SizedBox(height: AppTokens.spaceSM),
-                        itemBuilder: (ctx, i) {
-                          final notif = mockNotifikasi[i];
-                          return _NotifTile(notif: notif)
-                              .animate()
-                              .fadeIn(delay: (i * 80).ms, duration: 300.ms)
-                              .slideX(begin: 0.05, end: 0);
-                        },
                       ),
                     ),
-                  ),
+            ),
           ),
         ),
       ),
@@ -144,7 +167,7 @@ class _NotifTile extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: notif.isRead ? Colors.white30 : Colors.white54,
                       ),
-                  maxLines: 2,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: AppTokens.spaceXXS),

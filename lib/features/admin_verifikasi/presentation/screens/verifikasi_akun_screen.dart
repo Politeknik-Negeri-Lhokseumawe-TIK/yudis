@@ -45,14 +45,7 @@ class _VerifikasiAkunScreenState extends ConsumerState<VerifikasiAkunScreen>
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(adminProvider);
-    final allMahasiswa = AuthService.getAllMahasiswaUsers();
-    final filteredMahasiswa = allMahasiswa.where((u) {
-      if (_searchQuery.isEmpty) return true;
-      final q = _searchQuery.toLowerCase();
-      return u.nama.toLowerCase().contains(q) ||
-          u.nim.toLowerCase().contains(q) ||
-          u.email.toLowerCase().contains(q);
-    }).toList();
+
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -221,28 +214,49 @@ class _VerifikasiAkunScreenState extends ConsumerState<VerifikasiAkunScreen>
                                 const SizedBox(height: AppTokens.spaceMD),
 
                                 Expanded(
-                                  child: filteredMahasiswa.isEmpty
-                                      ? Center(
+                                  child: FutureBuilder<List<User>>(
+                                    future: AuthService.getAllMahasiswaUsers(),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState == ConnectionState.waiting) {
+                                        return const Center(child: CircularProgressIndicator(color: Colors.white54));
+                                      }
+                                      final allMhs = snapshot.data ?? [];
+                                      final filtered = allMhs.where((u) {
+                                        if (_searchQuery.isEmpty) return true;
+                                        final q = _searchQuery.toLowerCase();
+                                        return u.nama.toLowerCase().contains(q) ||
+                                            u.nim.toLowerCase().contains(q) ||
+                                            u.email.toLowerCase().contains(q);
+                                      }).toList();
+
+                                      if (filtered.isEmpty) {
+                                        return Center(
                                           child: Text(
-                                            'Tidak ada mahasiswa ditemukan untuk "$_searchQuery"',
+                                            _searchQuery.isEmpty
+                                                ? 'Belum ada data mahasiswa terdaftar'
+                                                : 'Tidak ada mahasiswa ditemukan untuk "$_searchQuery"',
                                             style: const TextStyle(color: Colors.white38),
                                           ),
-                                        )
-                                      : ListView.separated(
-                                          physics: const ClampingScrollPhysics(),
-                                          itemCount: filteredMahasiswa.length,
-                                          separatorBuilder: (_, _) => const SizedBox(height: AppTokens.spaceSM),
-                                          itemBuilder: (ctx, i) {
-                                            final user = filteredMahasiswa[i];
-                                            return _MahasiswaPasswordCard(
-                                              user: user,
-                                              onChangePassword: () => _showAdminChangePasswordDialog(
-                                                context,
-                                                user,
-                                              ),
-                                            ).animate().fadeIn(delay: (i * 60).ms, duration: 300.ms);
-                                          },
-                                        ),
+                                        );
+                                      }
+
+                                      return ListView.separated(
+                                        physics: const ClampingScrollPhysics(),
+                                        itemCount: filtered.length,
+                                        separatorBuilder: (_, _) => const SizedBox(height: AppTokens.spaceSM),
+                                        itemBuilder: (ctx, i) {
+                                          final user = filtered[i];
+                                          return _MahasiswaPasswordCard(
+                                            user: user,
+                                            onChangePassword: () => _showAdminChangePasswordDialog(
+                                              context,
+                                              user,
+                                            ),
+                                          ).animate().fadeIn(delay: (i * 60).ms, duration: 300.ms);
+                                        },
+                                      );
+                                    },
+                                  ),
                                 ),
                               ],
                             ),

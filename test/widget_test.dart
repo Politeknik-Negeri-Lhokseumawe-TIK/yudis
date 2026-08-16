@@ -5,6 +5,7 @@ import 'package:yudis/shared/widgets/glass_button.dart';
 import 'package:yudis/features/auth/domain/user_model.dart';
 import 'package:yudis/features/auth/data/auth_service.dart';
 import 'package:yudis/features/pendaftaran_yudisium/domain/pendaftaran_model.dart';
+import 'package:yudis/features/notifikasi/domain/notifikasi_model.dart';
 import 'package:yudis/features/pendaftaran_yudisium/presentation/widgets/prodi_badge_widget.dart';
 import 'package:yudis/shared/widgets/animated_counter.dart';
 import 'package:yudis/shared/widgets/countdown_timer_widget.dart';
@@ -66,22 +67,18 @@ void main() {
       expect(pendaftaran.uploadProgress, 0.5);
     });
 
-    test('AuthService resetPassword & adminChangePassword test', () {
-      final resetSuccess = AuthService.resetPassword(
-        nimOrEmail: '2021903430045',
-        newPassword: 'newTestPassword123',
-      );
-      expect(resetSuccess, isTrue);
-
-      final adminChangeSuccess = AuthService.adminChangePassword(
-        userId: 'u001',
-        newPassword: 'adminChangedPassword123',
-      );
-      expect(adminChangeSuccess, isTrue);
-
-      final found = AuthService.findMahasiswaByNimOrEmail('2021903430045');
-      expect(found, isNotNull);
-      expect(found!.nama, 'Ahmad Fauzi');
+    test('Notifikasi model deserialization test', () {
+      final notif = Notifikasi.fromRow({
+        'id': 'n01',
+        'judul': 'Yudisium Dibuka',
+        'pesan': 'Batas pendaftaran 26 Agustus 2026',
+        'type': 'info',
+        'is_read': false,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      expect(notif.judul, 'Yudisium Dibuka');
+      expect(notif.isRead, isFalse);
+      expect(notif.type, NotifikasiType.info);
     });
   });
 

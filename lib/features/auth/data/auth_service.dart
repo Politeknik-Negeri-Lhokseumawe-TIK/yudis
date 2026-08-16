@@ -1,174 +1,11 @@
-import 'dart:async';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import '../domain/user_model.dart';
 import '../../admin_verifikasi/data/admin_repository.dart';
-import '../../../core/security/crypto_security_service.dart';
 
-/// Auth service — mock implementation dengan enkripsi & real-time sync
+
+/// Auth service — Supabase implementation (real-time, persisten)
 class AuthService {
-  AuthService({FlutterSecureStorage? secureStorage})
-      : _secureStorage = secureStorage ??
-            const FlutterSecureStorage(
-              // Web: gunakan localStorage sebagai fallback
-              webOptions: WebOptions(dbName: 'yudis_secure', publicKey: 'yudis'),
-              // Android: gunakan EncryptedSharedPreferences
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
-            );
-
-  final FlutterSecureStorage _secureStorage;
-
-  static const _keyToken = 'auth_token';
-  static const _keyUser = 'cached_user';
-
-  // ── Mock data ─────────────────────────────────────────────────
-  static final List<_MockAccount> _mockAccounts = [
-    _MockAccount(
-      user: const User(
-        id: 'u001',
-        nim: '2021903430045',
-        nama: 'Ahmad Fauzi',
-        email: 'ahmad.fauzi@gmail.com',
-        role: UserRole.mahasiswa,
-        statusAkun: StatusAkun.aktif,
-        programStudi: ProgramStudi.trkj,
-        noHp: '085712345678',
-      ),
-      password: 'password123',
-      token: 'mock-token-mahasiswa-aktif',
-    ),
-    _MockAccount(
-      user: const User(
-        id: 'u002',
-        nim: '2021903430088',
-        nama: 'Siti Rahmi',
-        email: 'siti.rahmi@gmail.com',
-        role: UserRole.mahasiswa,
-        statusAkun: StatusAkun.pendingVerifikasi,
-        programStudi: ProgramStudi.trkj,
-        noHp: '089876543210',
-      ),
-      password: 'password123',
-      token: 'mock-token-mahasiswa-pending',
-    ),
-    _MockAccount(
-      user: const User(
-        id: 'a001',
-        nim: 'ADM001',
-        nama: 'Admin Yudisium',
-        email: 'admin@pnl.ac.id',
-        role: UserRole.admin,
-        statusAkun: StatusAkun.aktif,
-        programStudi: ProgramStudi.ti,
-      ),
-      password: 'admin123',
-      token: 'mock-token-admin',
-    ),
-  ];
-
-  /// Update status akun pengguna secara real-time (dipanggil oleh Admin saat verifikasi)
-  static void updateUserStatus(String userId, StatusAkun newStatus) {
-    final idx = _mockAccounts.indexWhere((a) => a.user.id == userId);
-    if (idx != -1) {
-      final old = _mockAccounts[idx];
-      _mockAccounts[idx] = _MockAccount(
-        user: old.user.copyWith(statusAkun: newStatus),
-        password: old.password,
-        token: old.token,
-      );
-    }
-  }
-
-  /// Reset password mandiri oleh mahasiswa (Fitur Lupa Password)
-  static bool resetPassword({
-    required String nimOrEmail,
-    required String newPassword,
-  }) {
-    final clean = nimOrEmail.trim().toLowerCase();
-    final idx = _mockAccounts.indexWhere(
-      (a) => a.user.nim.toLowerCase() == clean || a.user.email.toLowerCase() == clean,
-    );
-    if (idx == -1) return false;
-
-    final old = _mockAccounts[idx];
-    _mockAccounts[idx] = _MockAccount(
-      user: old.user,
-      password: newPassword,
-      token: old.token,
-    );
-    return true;
-  }
-
-  /// Admin mengubah password akun mahasiswa secara langsung
-  static bool adminChangePassword({
-    required String userId,
-    required String newPassword,
-  }) {
-    final idx = _mockAccounts.indexWhere((a) => a.user.id == userId);
-    if (idx == -1) return false;
-
-    final old = _mockAccounts[idx];
-    _mockAccounts[idx] = _MockAccount(
-      user: old.user,
-      password: newPassword,
-      token: old.token,
-    );
-    return true;
-  }
-
-  /// Dapatkan daftar seluruh mahasiswa untuk dikelola oleh Admin
-  static List<User> getAllMahasiswaUsers() {
-    return _mockAccounts
-        .where((a) => a.user.role == UserRole.mahasiswa)
-        .map((a) => a.user)
-        .toList();
-  }
-
-  /// Cek apakah akun mahasiswa terdaftar berdasarkan NIM atau Email
-  static User? findMahasiswaByNimOrEmail(String nimOrEmail) {
-    final clean = nimOrEmail.trim().toLowerCase();
-    return _mockAccounts
-        .where((a) => a.user.role == UserRole.mahasiswa)
-        .map((a) => a.user)
-        .where((u) => u.nim.toLowerCase() == clean || u.email.toLowerCase() == clean)
-        .firstOrNull;
-  }
-
-  // ── Token Management ──────────────────────────────────────────
-  Future<String?> getToken() async {
-    return await _secureStorage.read(key: _keyToken);
-  }
-
-  Future<void> saveToken(String token) async {
-    await _secureStorage.write(key: _keyToken, value: token);
-  }
-
-  Future<void> clearToken() async {
-    await _secureStorage.delete(key: _keyToken);
-  }
-
-  // ── User Cache ────────────────────────────────────────────────
-  Future<User?> getCachedUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString(_keyUser);
-    if (json == null) return null;
-    try {
-      return User.fromJson(jsonDecode(json) as Map<String, dynamic>);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> cacheUser(User user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_keyUser, jsonEncode(user.toJson()));
-  }
-
-  Future<void> clearCache() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_keyUser);
-  }
+  static SupabaseClient get _supabase => Supabase.instance.client;
 
   // ── Auth Operations ───────────────────────────────────────────
 
@@ -177,25 +14,45 @@ class AuthService {
     required String nimOrEmail,
     required String password,
   }) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 800));
+    try {
+      // Coba login via email
+      String email = nimOrEmail.trim().toLowerCase();
 
-    final hashedInput = CryptoSecurityService.hashSha256(password);
+      // Jika input bukan email (tidak ada @), cari email berdasarkan NIM
+      if (!email.contains('@')) {
+        final nimResult = await _supabase
+            .from('users')
+            .select('email')
+            .eq('nim', nimOrEmail.trim())
+            .maybeSingle();
+        if (nimResult == null) {
+          return AuthResult.failure('NIM tidak ditemukan.');
+        }
+        email = nimResult['email'] as String;
+      }
 
-    final account = _mockAccounts.where((a) {
-      final matchNim = a.user.nim == nimOrEmail.trim();
-      final matchEmail = a.user.email == nimOrEmail.trim().toLowerCase();
-      final matchPassword = a.password == password || a.password == hashedInput;
-      return (matchNim || matchEmail) && matchPassword;
-    }).firstOrNull;
+      final response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
 
-    if (account == null) {
-      return AuthResult.failure('NIM/email atau password salah.');
+      if (response.user == null) {
+        return AuthResult.failure('Login gagal. Periksa email/password Anda.');
+      }
+
+      // Ambil profil user dari tabel users
+      final userRow = await _supabase
+          .from('users')
+          .select()
+          .eq('id', response.user!.id)
+          .single();
+
+      return AuthResult.success(_rowToUser(userRow), response.session!.accessToken);
+    } on AuthException catch (e) {
+      return AuthResult.failure(_mapAuthError(e.message));
+    } catch (e) {
+      return AuthResult.failure('Terjadi kesalahan. Coba lagi.');
     }
-
-    await saveToken(account.token);
-    await cacheUser(account.user);
-    return AuthResult.success(account.user, account.token);
   }
 
   /// Registrasi mahasiswa baru
@@ -207,63 +64,197 @@ class AuthService {
     required ProgramStudi programStudi,
     required String noHp,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 1000));
+    try {
+      // Cek duplikasi NIM
+      final existing = await _supabase
+          .from('users')
+          .select('nim')
+          .eq('nim', nim.trim())
+          .maybeSingle();
+      if (existing != null) {
+        return AuthResult.failure('NIM $nim sudah terdaftar.');
+      }
 
-    // Cek duplikasi NIM
-    final existing = _mockAccounts.where((a) => a.user.nim == nim.trim());
-    if (existing.isNotEmpty) {
-      return AuthResult.failure('NIM $nim sudah terdaftar.');
+      // Buat akun di Supabase Auth
+      final response = await _supabase.auth.signUp(
+        email: email.trim().toLowerCase(),
+        password: password,
+      );
+
+      if (response.user == null) {
+        return AuthResult.failure('Gagal membuat akun. Coba lagi.');
+      }
+
+      final uid = response.user!.id;
+
+      // Insert profil ke tabel users
+      final userData = {
+        'id': uid,
+        'nim': nim.trim(),
+        'nama': nama.trim(),
+        'email': email.trim().toLowerCase(),
+        'role': 'mahasiswa',
+        'status_akun': 'pendingVerifikasi',
+        'program_studi': programStudi.value,
+        'no_hp': noHp.trim(),
+      };
+      await _supabase.from('users').insert(userData);
+
+      // Log aktivitas untuk admin
+      await AdminRepository.logActivity(
+        type: 'pendaftaranAkun',
+        actorName: nama.trim(),
+        targetName: 'Registrasi Akun Baru',
+        description: '$nama ($nim) mendaftar akun baru, menunggu verifikasi.',
+      );
+
+      final newUser = _rowToUser({...userData, 'created_at': DateTime.now().toIso8601String()});
+      return AuthResult.success(newUser, response.session?.accessToken ?? '');
+    } on AuthException catch (e) {
+      return AuthResult.failure(_mapAuthError(e.message));
+    } catch (e) {
+      return AuthResult.failure('Terjadi kesalahan saat registrasi.');
     }
-
-    final newUser = User(
-      id: 'u${DateTime.now().millisecondsSinceEpoch}',
-      nim: nim.trim(),
-      nama: nama.trim(),
-      email: email.trim().toLowerCase(),
-      role: UserRole.mahasiswa,
-      statusAkun: StatusAkun.pendingVerifikasi,
-      programStudi: programStudi,
-      noHp: noHp.trim(),
-      createdAt: DateTime.now(),
-    );
-
-    final token = 'mock-token-${newUser.id}';
-    _mockAccounts.add(_MockAccount(
-      user: newUser,
-      password: CryptoSecurityService.hashSha256(password),
-      token: token,
-    ));
-
-    // Sinkronisasi real-time ke antrean verifikasi Admin
-    AdminRepository.addPendingAccount(newUser);
-
-    await saveToken(token);
-    await cacheUser(newUser);
-    return AuthResult.success(newUser, token);
   }
 
-  /// Get current user dari token (mock)
+  /// Get current user dari sesi aktif
   Future<AuthResult> getMe() async {
-    final token = await getToken();
-    if (token == null) return AuthResult.failure('Tidak ada sesi aktif.');
+    try {
+      final session = _supabase.auth.currentSession;
+      if (session == null) {
+        return AuthResult.failure('Tidak ada sesi aktif.');
+      }
 
-    await Future.delayed(const Duration(milliseconds: 300));
+      final userRow = await _supabase
+          .from('users')
+          .select()
+          .eq('id', session.user.id)
+          .single();
 
-    final account = _mockAccounts.where((a) => a.token == token).firstOrNull;
-    if (account == null) {
-      await clearToken();
-      await clearCache();
+      return AuthResult.success(_rowToUser(userRow), session.accessToken);
+    } catch (_) {
       return AuthResult.failure('Sesi tidak valid.');
     }
-
-    await cacheUser(account.user);
-    return AuthResult.success(account.user, token);
   }
 
   /// Logout
   Future<void> logout() async {
-    await clearToken();
-    await clearCache();
+    await _supabase.auth.signOut();
+  }
+
+  /// Reset password — kirim email reset ke mahasiswa
+  static Future<bool> resetPassword({required String nimOrEmail}) async {
+    try {
+      String email = nimOrEmail.trim().toLowerCase();
+      if (!email.contains('@')) {
+        final row = await _supabase
+            .from('users')
+            .select('email')
+            .eq('nim', nimOrEmail.trim())
+            .maybeSingle();
+        if (row == null) return false;
+        email = row['email'] as String;
+      }
+      await _supabase.auth.resetPasswordForEmail(email);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Admin mengubah status akun mahasiswa
+  static Future<void> updateUserStatus(String userId, StatusAkun newStatus) async {
+    await _supabase
+        .from('users')
+        .update({'status_akun': newStatus.value})
+        .eq('id', userId);
+  }
+
+  /// Admin mengubah password akun mahasiswa (via update user)
+  static Future<bool> adminChangePassword({
+    required String userId,
+    required String newPassword,
+  }) async {
+    try {
+      // Untuk keamanan, perubahan password dilakukan via Supabase Admin SDK
+      // di sisi server. Pada web app ini, admin bisa trigger email reset.
+      final row = await _supabase
+          .from('users')
+          .select('email')
+          .eq('id', userId)
+          .single();
+      await _supabase.auth.resetPasswordForEmail(row['email'] as String);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Dapatkan daftar seluruh mahasiswa untuk dikelola Admin
+  static Future<List<User>> getAllMahasiswaUsers() async {
+    final rows = await _supabase
+        .from('users')
+        .select()
+        .eq('role', 'mahasiswa')
+        .order('created_at', ascending: false);
+    return (rows as List).map((r) => _rowToUser(r as Map<String, dynamic>)).toList();
+  }
+
+  /// Cek apakah mahasiswa terdaftar berdasarkan NIM atau Email
+  static Future<User?> findMahasiswaByNimOrEmail(String nimOrEmail) async {
+    final clean = nimOrEmail.trim().toLowerCase();
+    final rows = await _supabase
+        .from('users')
+        .select()
+        .eq('role', 'mahasiswa')
+        .or('nim.eq.$nimOrEmail,email.eq.$clean')
+        .limit(1);
+    if ((rows as List).isEmpty) return null;
+    return _rowToUser(rows.first);
+  }
+
+  // ── Helper: konversi row Supabase → User model ─────────────
+  static User _rowToUser(Map<String, dynamic> row) {
+    return User(
+      id: row['id'] as String,
+      nim: row['nim'] as String,
+      nama: row['nama'] as String,
+      email: row['email'] as String,
+      role: UserRole.values.firstWhere(
+        (e) => e.value == row['role'],
+        orElse: () => UserRole.mahasiswa,
+      ),
+      statusAkun: StatusAkun.values.firstWhere(
+        (e) => e.value == (row['status_akun'] ?? 'pendingVerifikasi'),
+        orElse: () => StatusAkun.pendingVerifikasi,
+      ),
+      programStudi: ProgramStudi.values.firstWhere(
+        (e) => e.value == row['program_studi'],
+        orElse: () => ProgramStudi.ti,
+      ),
+      noHp: row['no_hp'] as String?,
+      avatarUrl: row['avatar_url'] as String?,
+      createdAt: row['created_at'] != null
+          ? DateTime.tryParse(row['created_at'] as String)
+          : null,
+    );
+  }
+
+  // ── Helper: mapping pesan error Supabase ke Bahasa Indonesia ───
+  static String _mapAuthError(String message) {
+    if (message.contains('Invalid login credentials')) {
+      return 'Email atau password salah.';
+    }
+    if (message.contains('Email not confirmed')) {
+      return 'Email belum dikonfirmasi. Cek inbox email Anda.';
+    }
+    if (message.contains('User already registered')) {
+      return 'Email ini sudah terdaftar. Gunakan email lain.';
+    }
+    if (message.contains('Password should be')) {
+      return 'Password minimal 6 karakter.';
+    }
+    return 'Terjadi kesalahan: $message';
   }
 }
 
@@ -281,15 +272,4 @@ class AuthResult {
   final String? error;
 
   bool get isSuccess => user != null && error == null;
-}
-
-class _MockAccount {
-  const _MockAccount({
-    required this.user,
-    required this.password,
-    required this.token,
-  });
-  final User user;
-  final String password;
-  final String token;
 }

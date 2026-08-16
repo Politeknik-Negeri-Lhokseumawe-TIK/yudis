@@ -107,10 +107,7 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
             nama: dm['nama'] as String,
             deskripsi: dm['deskripsi'] as String? ?? '',
             isWajib: dm['is_wajib'] as bool? ?? true,
-            status: StatusDokumen.values.firstWhere(
-              (s) => s.value == (dm['status'] ?? 'belum_upload'),
-              orElse: () => StatusDokumen.belumUpload,
-            ),
+            status: StatusDokumen.fromString(dm['status'] as String?),
             filePath: dm['file_url'] as String?,
             fileName: dm['file_name'] as String?,
             fileSize: dm['file_size'] as int?,

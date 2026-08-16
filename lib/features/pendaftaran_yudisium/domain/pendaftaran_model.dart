@@ -53,6 +53,17 @@ enum StatusDokumen {
   const StatusDokumen(this.value, this.label);
   final String value;
   final String label;
+
+  static StatusDokumen fromString(String? val) {
+    if (val == null || val.isEmpty) return StatusDokumen.belumUpload;
+    final clean = val.toLowerCase().replaceAll('_', '');
+    return switch (clean) {
+      'menunggu' => StatusDokumen.menunggu,
+      'valid' => StatusDokumen.valid,
+      'tidakvalid' => StatusDokumen.tidakValid,
+      _ => StatusDokumen.belumUpload,
+    };
+  }
 }
 
 // ── Jenjang Pendidikan ────────────────────────────────────────
@@ -102,9 +113,11 @@ class DokumenSyarat {
   String? catatanAdmin;
   bool ada; // checkbox ADA/TIDAK ADA
 
-  // isUploaded = true jika status bukan belumUpload
-  // filePath boleh null saat optimistic update (sebelum URL Supabase kembali)
-  bool get isUploaded => status != StatusDokumen.belumUpload;
+  // isUploaded = true jika status bukan belumUpload, atau file_url/file_name sudah ada
+  bool get isUploaded =>
+      status != StatusDokumen.belumUpload ||
+      (fileName != null && fileName!.isNotEmpty) ||
+      (filePath != null && filePath!.isNotEmpty);
 
   String get maxSizeFormatted {
     if (maxSizeBytes >= 1048576) {

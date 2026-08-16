@@ -878,6 +878,88 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
           textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 14),
+        // ── Deadline Pill Banner 26 Agustus 2026 ────────────────────────
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1438).withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(
+              color: AppTokens.accentGold.withValues(alpha: 0.45),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppTokens.accentGold.withValues(alpha: 0.15),
+                blurRadius: 18,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppTokens.accentGold,
+                  shape: BoxShape.circle,
+                ),
+              )
+                  .animate(onPlay: (c) => c.repeat(reverse: true))
+                  .scale(
+                      begin: const Offset(1, 1),
+                      end: const Offset(1.5, 1.5),
+                      duration: 1200.ms)
+                  .fade(begin: 0.6, end: 1.0, duration: 1200.ms),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.event_available_rounded,
+                color: AppTokens.accentGold,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              RichText(
+                text: const TextSpan(
+                  style: TextStyle(
+                    fontSize: 12.5,
+                  ),
+                  children: [
+                    TextSpan(
+                      text: 'Batas Pendaftaran: ',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '26 Agustus 2026',
+                      style: TextStyle(
+                        color: AppTokens.accentGoldLight,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        )
+            .animate()
+            .fadeIn(delay: 350.ms, duration: 800.ms)
+            .slideY(
+                begin: 0.2,
+                end: 0,
+                duration: 800.ms,
+                curve: Curves.easeOutCubic)
+            .shimmer(
+              delay: 1500.ms,
+              duration: 2500.ms,
+              color: Colors.white.withValues(alpha: 0.15),
+            ),
       ],
     )
         .animate()

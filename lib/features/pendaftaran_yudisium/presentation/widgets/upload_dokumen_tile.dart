@@ -514,15 +514,64 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
                             : Colors.white24,
                       ),
                       padding: const EdgeInsets.symmetric(
-                        horizontal: AppTokens.spaceMD,
-                        vertical: AppTokens.spaceXS,
-                      ),
+                          horizontal: AppTokens.spaceMD,
+                          vertical: AppTokens.spaceXS,
+                        ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppTokens.radiusSM),
                       ),
                     ),
                   ),
                 ),
+                if (isUploaded) ...[
+                  const SizedBox(width: AppTokens.spaceXS),
+                  IconButton(
+                    tooltip: 'Hapus Berkas Ini',
+                    icon: const Icon(Icons.delete_outline_rounded,
+                        color: AppTokens.error, size: 20),
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: const Color(0xFF1B1630),
+                          title: const Text('Hapus Berkas?',
+                              style: TextStyle(color: Colors.white)),
+                          content: Text(
+                            'Apakah Anda yakin ingin menghapus berkas "${displayFileName ?? dok.nama}"?',
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Batal'),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTokens.error),
+                              onPressed: () => Navigator.pop(ctx, true),
+                              child: const Text('Hapus'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true && mounted) {
+                        setState(() {
+                          _localFileName = null;
+                          _localFileSize = null;
+                        });
+                        final userId = ref.read(authProvider).user?.id ?? '';
+                        await ref
+                            .read(pendaftaranProvider.notifier)
+                            .hapusDokumen(
+                              dokumenId: dok.id,
+                              userId: userId,
+                            );
+                        widget.onStatusChanged?.call();
+                      }
+                    },
+                  ),
+                ],
               ],
             ),
           ] else if (isUploaded && dok.filePath != null) ...[

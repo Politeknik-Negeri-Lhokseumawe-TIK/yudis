@@ -348,6 +348,33 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
     }
   }
 
+  /// Hapus berkas dokumen yang telah diunggah
+  Future<bool> hapusDokumen({
+    required String dokumenId,
+    required String userId,
+  }) async {
+    final pendaftaran = state.pendaftaran;
+    if (pendaftaran == null) return false;
+
+    try {
+      // Reset record di Supabase
+      await _supabase.from('dokumen_pendaftaran').update({
+        'status': 'belum_upload',
+        'file_url': null,
+        'file_name': null,
+        'file_size': null,
+        'uploaded_at': null,
+      }).eq('id', dokumenId);
+
+      // Refresh state
+      await loadExistingPendaftaran(userId);
+      return true;
+    } catch (e) {
+      state = state.copyWith(error: 'Gagal menghapus dokumen: $e');
+      return false;
+    }
+  }
+
   void updateBiodata(BiodataCalon biodata) {
     final p = state.pendaftaran;
     if (p == null) return;

@@ -7,6 +7,7 @@ import '../../presentation/providers/pendaftaran_provider.dart';
 import '../../domain/pendaftaran_model.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/domain/user_model.dart';
+import '../../../notifikasi/presentation/screens/notifikasi_screen.dart';
 import '../../../../shared/widgets/animated_background.dart';
 import '../../../../shared/widgets/countdown_timer_widget.dart';
 import '../../../../shared/widgets/glass_card.dart';
@@ -23,6 +24,8 @@ class DashboardMahasiswaScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final pendaftaranState = ref.watch(pendaftaranProvider);
+    final notifsAsync = ref.watch(notifikasiStreamProvider);
+    final unreadNotifs = notifsAsync.value?.where((n) => !n.isRead).length ?? 0;
     final isDesktop = context.isDesktopWithSidebar;
     final isTablet = context.isTablet;
 
@@ -37,15 +40,16 @@ class DashboardMahasiswaScreen extends ConsumerWidget {
           showBackButton: false,
           titleWidget: Row(
             children: [
-              Image.asset(
-                'assets/images/logo_pnl.jpg',
-                width: 28,
-                height: 28,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Icon(
+              Container(
+                padding: const EdgeInsets.all(AppTokens.spaceXXS),
+                decoration: BoxDecoration(
+                  color: AppTokens.primaryGreen.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(AppTokens.radiusSM),
+                ),
+                child: const Icon(
                   Icons.school_rounded,
-                  color: AppTokens.accentGold,
-                  size: 24,
+                  color: AppTokens.primaryGreenLight,
+                  size: 22,
                 ),
               ),
               const SizedBox(width: AppTokens.spaceXS),
@@ -61,7 +65,13 @@ class DashboardMahasiswaScreen extends ConsumerWidget {
           actions: [
             IconButton(
               onPressed: () => context.push('/mahasiswa/notifikasi'),
-              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+              icon: Badge(
+                isLabelVisible: unreadNotifs > 0,
+                label: Text('$unreadNotifs',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                backgroundColor: AppTokens.error,
+                child: const Icon(Icons.notifications_outlined, color: Colors.white),
+              ),
             ),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert_rounded, color: Colors.white),

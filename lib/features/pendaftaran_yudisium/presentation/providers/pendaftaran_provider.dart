@@ -324,12 +324,21 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
         'biodata': _biodataToMap(p.biodata),
       }).eq('id', p.id);
 
+      // Ambil data user untuk log yang rapi
+      final userRow = await _supabase
+          .from('users')
+          .select('nama, nim')
+          .eq('id', p.userId)
+          .maybeSingle();
+      final namaMhs = userRow?['nama'] as String? ?? 'Mahasiswa';
+      final nimMhs = userRow?['nim'] as String? ?? '';
+
       // Log aktivitas
       await AdminRepository.logActivity(
         type: 'pendaftaranBaru',
-        actorName: '',
-        targetName: 'Pendaftaran ${p.programStudi.value}',
-        description: 'Mahasiswa mengajukan berkas pendaftaran yudisium.',
+        actorName: namaMhs,
+        targetName: 'Pengajuan Berkas Yudisium',
+        description: '$namaMhs ($nimMhs) telah mengajukan seluruh berkas pendaftaran yudisium untuk diverifikasi.',
       );
 
       p.status = StatusPendaftaran.submitted;

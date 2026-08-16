@@ -6,6 +6,7 @@ import '../../domain/pendaftaran_model.dart';
 import '../providers/pendaftaran_provider.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../../shared/widgets/glass_card.dart';
+import '../../../../shared/widgets/document_preview_dialog.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 /// Tile upload dokumen dengan status chip dan progress
@@ -285,31 +286,105 @@ class _UploadDokumenTileState extends ConsumerState<UploadDokumenTile> {
             ),
           ],
 
-          // Upload button
+          // Upload & Preview buttons
           if (!widget.isReadOnly) ...[
+            const SizedBox(height: AppTokens.spaceSM),
+            Row(
+              children: [
+                if (isUploaded && dok.filePath != null) ...[
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => DocumentPreviewDialog(
+                            title: dok.nama,
+                            fileUrl: dok.filePath!,
+                            fileName: dok.fileName,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.visibility_rounded, size: 15),
+                      label: const Text(
+                        'Buka Berkas 👁️',
+                        style: TextStyle(fontSize: AppTokens.textXS),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTokens.primaryPurpleLight,
+                        side: BorderSide(
+                          color: AppTokens.primaryPurpleLight.withValues(alpha: 0.5),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppTokens.spaceMD,
+                          vertical: AppTokens.spaceXS,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppTokens.radiusSM),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppTokens.spaceXS),
+                ],
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isUploading ? null : _pickFile,
+                    icon: Icon(
+                      isUploaded ? Icons.refresh_rounded : Icons.upload_rounded,
+                      size: 16,
+                    ),
+                    label: Text(
+                      _isUploading
+                          ? 'Mengupload...'
+                          : isUploaded
+                              ? 'Ganti File'
+                              : 'Upload File (PDF / JPG / PNG)',
+                      style: const TextStyle(fontSize: AppTokens.textXS),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor:
+                          isUploaded ? AppTokens.success : Colors.white70,
+                      side: BorderSide(
+                        color: isUploaded
+                            ? AppTokens.success.withValues(alpha: 0.5)
+                            : Colors.white24,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTokens.spaceMD,
+                        vertical: AppTokens.spaceXS,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTokens.radiusSM),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ] else if (isUploaded && dok.filePath != null) ...[
             const SizedBox(height: AppTokens.spaceSM),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: _isUploading ? null : _pickFile,
-                icon: Icon(
-                  isUploaded ? Icons.refresh_rounded : Icons.upload_rounded,
-                  size: 16,
-                ),
-                label: Text(
-                  _isUploading
-                      ? 'Mengupload...'
-                      : isUploaded
-                          ? 'Ganti File'
-                          : 'Upload File (PDF / JPG / PNG)',
-                  style: const TextStyle(fontSize: AppTokens.textXS),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => DocumentPreviewDialog(
+                      title: dok.nama,
+                      fileUrl: dok.filePath!,
+                      fileName: dok.fileName,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.visibility_rounded, size: 15),
+                label: const Text(
+                  'Buka Berkas 👁️',
+                  style: TextStyle(fontSize: AppTokens.textXS),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: isUploaded ? AppTokens.success : Colors.white70,
+                  foregroundColor: AppTokens.primaryPurpleLight,
                   side: BorderSide(
-                    color: isUploaded
-                        ? AppTokens.success.withValues(alpha: 0.5)
-                        : Colors.white24,
+                    color: AppTokens.primaryPurpleLight.withValues(alpha: 0.5),
                   ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppTokens.spaceMD,

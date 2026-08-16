@@ -113,6 +113,13 @@ class DokumenSyarat {
     return '${(maxSizeBytes / 1024).round()} KB';
   }
 
+  String get fileSizeFormatted {
+    if (fileSize == null || fileSize! <= 0) return '';
+    if (fileSize! < 1024) return '$fileSize B';
+    if (fileSize! < 1024 * 1024) return '${(fileSize! / 1024).toStringAsFixed(1)} KB';
+    return '${(fileSize! / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
   DokumenSyarat copyWith({
     StatusDokumen? status,
     String? filePath,

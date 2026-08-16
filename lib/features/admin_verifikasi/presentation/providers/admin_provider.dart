@@ -133,6 +133,48 @@ class AdminNotifier extends StateNotifier<AdminState> {
     );
   }
 
+  Future<void> setujuiPendaftaran({
+    required String pendaftaranId,
+    required String userId,
+    required String namaMahasiswa,
+  }) async {
+    await _repo.setujuiPendaftaran(
+      pendaftaranId: pendaftaranId,
+      userId: userId,
+      namaMahasiswa: namaMahasiswa,
+    );
+    final updated = await _repo.getPendaftaranList();
+    final logs = await _repo.getActivityLogs();
+    final stats = await _repo.getStats();
+    state = state.copyWith(
+      pendaftaranList: updated,
+      activityLogs: logs,
+      stats: stats,
+    );
+  }
+
+  Future<void> mintaRevisiPendaftaran({
+    required String pendaftaranId,
+    required String userId,
+    required String namaMahasiswa,
+    String? catatan,
+  }) async {
+    await _repo.mintaRevisiPendaftaran(
+      pendaftaranId: pendaftaranId,
+      userId: userId,
+      namaMahasiswa: namaMahasiswa,
+      catatan: catatan,
+    );
+    final updated = await _repo.getPendaftaranList();
+    final logs = await _repo.getActivityLogs();
+    final stats = await _repo.getStats();
+    state = state.copyWith(
+      pendaftaranList: updated,
+      activityLogs: logs,
+      stats: stats,
+    );
+  }
+
   @override
   void dispose() {
     _statsSub?.cancel();

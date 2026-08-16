@@ -158,6 +158,61 @@ class AdminRepository {
     return true;
   }
 
+  /// Menyetujui pendaftaran yudisium secara final
+  Future<bool> setujuiPendaftaran({
+    required String pendaftaranId,
+    required String userId,
+    required String namaMahasiswa,
+  }) async {
+    await _supabase.from('pendaftaran').update({
+      'status': 'disetujui',
+    }).eq('id', pendaftaranId);
+
+    await logActivity(
+      type: 'pendaftaranDisetujui',
+      actorName: 'Admin TIK',
+      targetName: namaMahasiswa,
+      description: 'Pendaftaran Yudisium $namaMahasiswa telah DISETUJUI / LULUS verifikasi berkas.',
+    );
+
+    await _supabase.from('notifikasi').insert({
+      'user_id': userId,
+      'judul': 'Selamat! Pendaftaran Yudisium Disetujui 🎉',
+      'pesan': 'Seluruh dokumen persyaratan yudisium Anda telah diverifikasi dan DISETUJUI oleh Admin Jurusan TIK PNL.',
+      'type': 'success',
+    });
+
+    return true;
+  }
+
+  /// Meminta revisi berkas pendaftaran yudisium
+  Future<bool> mintaRevisiPendaftaran({
+    required String pendaftaranId,
+    required String userId,
+    required String namaMahasiswa,
+    String? catatan,
+  }) async {
+    await _supabase.from('pendaftaran').update({
+      'status': 'revisi',
+    }).eq('id', pendaftaranId);
+
+    await logActivity(
+      type: 'revisiDiminta',
+      actorName: 'Admin TIK',
+      targetName: namaMahasiswa,
+      description: 'Permintaan revisi berkas pendaftaran yudisium untuk $namaMahasiswa.',
+    );
+
+    await _supabase.from('notifikasi').insert({
+      'user_id': userId,
+      'judul': 'Berkas Yudisium Perlu Revisi ⚠️',
+      'pesan': 'Terdapat berkas persyaratan yudisium yang perlu diperbaiki. ${catatan != null ? "Catatan: $catatan" : "Silakan periksa detail berkas Anda dan upload ulang."}',
+      'type': 'warning',
+    });
+
+    return true;
+  }
+
   // ── Statistik ─────────────────────────────────────────────────
   Future<Map<String, int>> getStats() async {
     final pendingAkun = await _supabase

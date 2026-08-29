@@ -252,12 +252,12 @@ DROP POLICY IF EXISTS "roster_manage_admin" ON public.roster_items;
 CREATE POLICY "roster_manage_admin" ON public.roster_items FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'laboran')));
 
+-- Policy Receptionist Officers (Publik/Kiosk/PC bisa baca & ubah dosen piket secara sinkron)
 DROP POLICY IF EXISTS "officers_read_all" ON public.receptionist_officers;
-CREATE POLICY "officers_read_all" ON public.receptionist_officers FOR SELECT USING (true);
-
 DROP POLICY IF EXISTS "officers_manage_admin" ON public.receptionist_officers;
-CREATE POLICY "officers_manage_admin" ON public.receptionist_officers FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'laboran')));
+CREATE POLICY "officers_select_policy" ON public.receptionist_officers FOR SELECT USING (true);
+CREATE POLICY "officers_insert_policy" ON public.receptionist_officers FOR INSERT WITH CHECK (true);
+CREATE POLICY "officers_update_policy" ON public.receptionist_officers FOR UPDATE USING (true);
 
 DROP POLICY IF EXISTS "bookings_select_policy" ON public.bookings;
 CREATE POLICY "bookings_select_policy" ON public.bookings FOR SELECT USING (true);

@@ -255,7 +255,7 @@ DROP POLICY IF EXISTS "roster_manage_admin" ON public.roster_items;
 CREATE POLICY "roster_manage_admin" ON public.roster_items FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'laboran')));
 
--- Policy Receptionist Officers (Publik bisa baca petugas jaga aktif, Desk/Petugas bisa ubah)
+-- Policy Receptionist Officers (Publik/Kiosk/PC bisa baca & ubah dosen piket secara sinkron)
 DROP POLICY IF EXISTS "officers_read_all" ON public.receptionist_officers;
 DROP POLICY IF EXISTS "officers_manage_admin" ON public.receptionist_officers;
 CREATE POLICY "officers_select_policy" ON public.receptionist_officers FOR SELECT USING (true);

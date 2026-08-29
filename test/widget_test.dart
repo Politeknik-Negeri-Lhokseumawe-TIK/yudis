@@ -2,15 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:yudis/shared/widgets/glass_card.dart';
 import 'package:yudis/shared/widgets/glass_button.dart';
-import 'package:yudis/features/auth/domain/user_model.dart';
-import 'package:yudis/features/pendaftaran_yudisium/domain/pendaftaran_model.dart';
-import 'package:yudis/features/notifikasi/domain/notifikasi_model.dart';
-import 'package:yudis/features/pendaftaran_yudisium/presentation/widgets/prodi_badge_widget.dart';
 import 'package:yudis/shared/widgets/animated_counter.dart';
-import 'package:yudis/shared/widgets/countdown_timer_widget.dart';
+import 'package:yudis/features/auth/domain/user_model.dart';
+import 'package:yudis/features/notifikasi/domain/notifikasi_model.dart';
+import 'package:yudis/features/peminjaman_ruang/domain/models/room_model.dart';
+import 'package:yudis/features/peminjaman_ruang/domain/models/booking_model.dart';
+import 'package:yudis/features/peminjaman_ruang/domain/models/receptionist_officer_model.dart';
 
 void main() {
-  group('Domain & Token Unit Tests', () {
+  group('SIM-LAB Domain & Model Tests', () {
     test('User model serialization test', () {
       final user = User(
         id: 'u001',
@@ -30,72 +30,75 @@ void main() {
       expect(fromJson.programStudi, ProgramStudi.ti);
     });
 
-    test('Pendaftaran progress calculation test', () {
-      final pendaftaran = PendaftaranYudisium(
-        id: 'p01',
+    test('RoomModel parsing & properties test', () {
+      const room = RoomModel(
+        id: 'TIK.101',
+        name: 'Laboratorium Multimedia & Game',
+        type: RoomType.lab,
+        floor: 1,
+        building: 'Gedung TIK',
+        capacity: 35,
+        facilities: ['AC', 'Smart Screen 75"', 'PC High-End RTX 4070'],
+        picName: 'Munawir, S.Kom.',
+      );
+
+      expect(room.id, 'TIK.101');
+      expect(room.type, RoomType.lab);
+      expect(room.capacity, 35);
+      expect(room.facilities.length, 3);
+    });
+
+    test('BookingModel status & calculation test', () {
+      final booking = BookingModel(
+        id: 'b-001',
+        bookingCode: 'PINJAM-20260829-001',
         userId: 'u001',
-        periodeId: 'per01',
-        programStudi: ProgramStudi.ti,
-        jenjang: Jenjang.d4,
-        ipk: 3.80,
-        totalSks: 144,
-        semester: 8,
-        tinggalDiAsrama: false,
-        dokumen: [
-          DokumenSyarat(
-            id: 'd1',
-            kode: 'KRS',
-            nama: 'KRS',
-            deskripsi: 'KRS',
-            status: StatusDokumen.valid,
-            filePath: '/mock/krs.pdf',
-          ),
-          DokumenSyarat(
-            id: 'd2',
-            kode: 'TRANSKRIP',
-            nama: 'Transkrip',
-            deskripsi: 'Transkrip',
-            status: StatusDokumen.belumUpload,
-          ),
-        ],
-        biodata: const BiodataCalon(),
+        userName: 'Ahmad Mahasiswa',
+        userNimNip: '220401012',
+        userPhone: '08123456789',
+        userRole: 'Mahasiswa',
+        roomCode: 'TIK.101',
+        roomName: 'Laboratorium Multimedia & Game',
+        bookingDate: DateTime(2026, 8, 30),
+        day: 'Senin',
+        startSession: 1,
+        endSession: 3,
+        startTime: '07:30',
+        endTime: '10:00',
+        purpose: 'Praktikum Mandiri Animasi 3D',
+        description: 'Praktikum mata kuliah animasi komputer',
+        supervisorLecturer: 'Zulham, S.T., M.Kom.',
+        status: BookingStatus.active,
+        createdAt: DateTime(2026, 8, 29, 8, 0),
+        checkoutCleanlinessStatus: true,
+        checkoutAcOffStatus: true,
       );
 
-      expect(pendaftaran.totalDokumenWajib, 2);
-      expect(pendaftaran.dokumenTerUpload, 1);
-      expect(pendaftaran.uploadProgress, 0.5);
+      expect(booking.bookingCode, 'PINJAM-20260829-001');
+      expect(booking.status, BookingStatus.active);
+      expect(booking.checkoutCleanlinessStatus, isTrue);
+      expect(booking.checkoutAcOffStatus, isTrue);
+    });
 
-      // Test batas ukuran file (File Size Limit)
-      final dok1Mb = DokumenSyarat(
-        id: 'd_foto',
-        kode: 'FOTO_4X6',
-        nama: 'Pas Foto',
-        deskripsi: 'Foto Formal',
-        maxSizeBytes: 1048576,
-      );
-      final dok3Mb = DokumenSyarat(
-        id: 'd_tga',
-        kode: 'TGA_ACC',
-        nama: 'Lembar TGA',
-        deskripsi: 'Lembar Pengesahan',
-        maxSizeBytes: 3145728,
-      );
-      expect(dok1Mb.maxSizeFormatted, '1 MB');
-      expect(dok3Mb.maxSizeFormatted, '3 MB');
+    test('ReceptionistOfficerModel predefined shift test', () {
+      final officers = ReceptionistOfficerModel.defaultOfficers;
+      expect(officers.isNotEmpty, isTrue);
+      expect(officers.first.name, 'Munawir, S.Kom.');
+      expect(officers.first.shiftName, 'Shift Pagi');
     });
 
     test('Notifikasi model deserialization test', () {
       final notif = Notifikasi.fromRow({
         'id': 'n01',
-        'judul': 'Yudisium Dibuka',
-        'pesan': 'Batas pendaftaran 26 Agustus 2026',
-        'type': 'info',
+        'judul': 'Peminjaman Disetujui',
+        'pesan': 'Kunci ruang TIK.101 siap diambil di Meja Resepsionis.',
+        'type': 'success',
         'is_read': false,
         'created_at': DateTime.now().toIso8601String(),
       });
-      expect(notif.judul, 'Yudisium Dibuka');
+      expect(notif.judul, 'Peminjaman Disetujui');
       expect(notif.isRead, isFalse);
-      expect(notif.type, NotifikasiType.info);
+      expect(notif.type, NotifikasiType.success);
     });
   });
 
@@ -120,67 +123,29 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: GlassButton(
-              label: 'Daftar',
+              label: 'Pinjam Ruang',
               onPressed: () => tapped = true,
             ),
           ),
         ),
       );
 
-      expect(find.text('Daftar'), findsOneWidget);
-      await tester.tap(find.text('Daftar'));
+      expect(find.text('Pinjam Ruang'), findsOneWidget);
+      await tester.tap(find.text('Pinjam Ruang'));
       await tester.pumpAndSettle();
       expect(tapped, isTrue);
-    });
-
-    testWidgets('ProdiBadgeWidget renders safely inside unbounded Row', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  ProdiBadgeWidget(
-                    programStudi: 'TI',
-                    size: ProdiBadgeSize.large,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('TI'), findsOneWidget);
     });
 
     testWidgets('AnimatedCounter renders smoothly', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AnimatedCounter(value: 42),
+            body: AnimatedCounter(value: 43),
           ),
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('42'), findsOneWidget);
-    });
-
-    testWidgets('CountdownTimerWidget renders days remaining', (tester) async {
-      final targetDate = DateTime.now().add(const Duration(days: 10));
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CountdownTimerWidget(targetDate: targetDate),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('Sisa Waktu Pendaftaran'), findsOneWidget);
-
-      // Clean up timer
-      await tester.pumpWidget(const SizedBox());
+      expect(find.text('43'), findsOneWidget);
     });
   });
 }

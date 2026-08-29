@@ -1179,11 +1179,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.info_outline_rounded,
+              const Icon(Icons.admin_panel_settings_rounded,
                   color: AppTokens.primaryGreenLight, size: 14),
               const SizedBox(width: AppTokens.spaceXS),
               Text(
-                'Akun Contoh Pengujian',
+                'Akun Admin',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: AppTokens.primaryGreenLight,
                       fontWeight: FontWeight.w600,
@@ -1193,7 +1193,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
           const SizedBox(height: 4),
           _demoRow(context, '🏛️ Laboran / Admin', 'admin@pnl.ac.id / admin123'),
-          _demoRow(context, '👤 Mahasiswa', '2021903430045 / password123'),
         ],
       ),
     ).animate().fadeIn(delay: 800.ms);

@@ -26,21 +26,6 @@ class AuthService {
               .maybeSingle();
 
           if (nimResult == null) {
-            // Jika login pengujian lokal
-            if (nimOrEmail.trim() == '2021903430045' && password == 'password123') {
-              return AuthResult.success(
-                const User(
-                  id: 'usr-demo-01',
-                  nim: '2021903430045',
-                  nama: 'Nazarul Qudri (Mahasiswa)',
-                  email: 'nazarul@students.pnl.ac.id',
-                  role: UserRole.mahasiswa,
-                  statusAkun: StatusAkun.aktif,
-                  programStudi: ProgramStudi.trkj,
-                ),
-                'mock-token-demo',
-              );
-            }
             return AuthResult.failure('NIM $nimOrEmail belum terdaftar.');
           }
         } catch (_) {}

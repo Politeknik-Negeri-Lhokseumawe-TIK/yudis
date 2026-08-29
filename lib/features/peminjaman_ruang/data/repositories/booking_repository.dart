@@ -6,125 +6,13 @@ import '../datasources/roster_data_source.dart';
 class BookingRepository {
   final List<BookingModel> _bookings = [];
 
-  BookingRepository() {
-    _seedInitialBookings();
-  }
+  BookingRepository();
 
-  void _seedInitialBookings() {
-    final now = DateTime.now();
-    _bookings.addAll([
-      BookingModel(
-        id: 'BKG-001',
-        bookingCode: 'BOOK-2026-0829-01',
-        userId: 'usr-1',
-        userName: 'Ahmad Maulana Al-Fatih',
-        userNimNip: '220401012',
-        userPhone: '081269871234',
-        userRole: 'Mahasiswa',
-        roomCode: 'TIK.106',
-        roomName: 'Laboratorium Algoritma & Pemrograman Mobile',
-        bookingDate: now.subtract(const Duration(days: 1)),
-        day: 'Jumat',
-        startSession: 8,
-        endSession: 11,
-        startTime: '14:20',
-        endTime: '18:00',
-        purpose: 'Riset / Tugas Akhir / Skripsi',
-        description: 'Pengujian Model Deep Learning dan Integrasi Flutter App untuk deteksi citra medis.',
-        supervisorLecturer: 'Safriadi ST, M.Kom.',
-        additionalFacilities: ['Kabel Converter HDMI / VGA / Type-C', 'Stop Kontak Ekstra'],
-        status: BookingStatus.completed,
-        createdAt: now.subtract(const Duration(days: 3)),
-        approvedAt: now.subtract(const Duration(days: 2)),
-        approvedBy: 'Munawir, S.Kom. (Laboran)',
-        checkoutCleanlinessStatus: true,
-        checkoutAcOffStatus: true,
-        checkoutLightsOffStatus: true,
-        checkoutPcOffStatus: true,
-        checkoutDoorsLockedStatus: true,
-        checkoutVideoUrl: 'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4',
-        checkoutVideoName: 'video_pemeriksaan_tik106_ahmad.mp4',
-        checkoutSubmittedAt: now.subtract(const Duration(days: 1, hours: 1)),
-        checkoutNotes: 'Semua 30 PC telah dishutdown, AC mati remote diletakkan di meja instruktur, sampah dibawa keluar.',
-        laboranReviewNotes: 'Verifikasi video valid: Kondisi lab bersih, AC OFF, kunci diterima di ruang teknisi.',
-      ),
-      BookingModel(
-        id: 'BKG-002',
-        bookingCode: 'BOOK-2026-0829-02',
-        userId: 'usr-2',
-        userName: 'Siti Nurhaliza',
-        userNimNip: '210402045',
-        userPhone: '085277112233',
-        userRole: 'Mahasiswa',
-        roomCode: 'TDC-202',
-        roomName: 'Studio Produksi Podcast, Audio & Video Editing',
-        bookingDate: now,
-        day: 'Sabtu',
-        startSession: 1,
-        endSession: 4,
-        startTime: '07:30',
-        endTime: '11:10',
-        purpose: 'Kegiatan Organisasi / Event Kemahasiswaan',
-        description: 'Take rekaman podcast Himpunan Mahasiswa TIK episode 4 bersama narasumber industri.',
-        supervisorLecturer: 'Nanda Saputri, SST., M.T.',
-        additionalFacilities: ['Mikrofon Wireless / Sound Podcast', 'Kamera DSLR & Tripod Studio'],
-        status: BookingStatus.active,
-        createdAt: now.subtract(const Duration(days: 2)),
-        approvedAt: now.subtract(const Duration(days: 1)),
-        approvedBy: 'Fachri Yanuar Rudi F, S.ST., M.T.',
-      ),
-      BookingModel(
-        id: 'BKG-003',
-        bookingCode: 'BOOK-2026-0829-03',
-        userId: 'usr-3',
-        userName: 'Dr. Rahmad Hidayat, S.Kom., M.Cs',
-        userNimNip: '198205122008121002',
-        userPhone: '081399887766',
-        userRole: 'Dosen',
-        roomCode: 'TIK.101',
-        roomName: 'Laboratorium Sistem Operasi & Basis Data',
-        bookingDate: now.add(const Duration(days: 2)),
-        day: 'Senin',
-        startSession: 8,
-        endSession: 11,
-        startTime: '14:20',
-        endTime: '18:00',
-        purpose: 'Kuliah Pengganti / Tambahan',
-        description: 'Kuliah Pengganti Praktikum Administrasi Basis Data kelas TI 2A & 2C.',
-        supervisorLecturer: 'Dr. Rahmad Hidayat, S.Kom., M.Cs',
-        additionalFacilities: ['Proyektor Portable + Pointer'],
-        status: BookingStatus.approved,
-        createdAt: now.subtract(const Duration(hours: 12)),
-        approvedAt: now.subtract(const Duration(hours: 2)),
-        approvedBy: 'Kepala Laboratorium Komputer',
-      ),
-      BookingModel(
-        id: 'BKG-004',
-        bookingCode: 'BOOK-2026-0829-04',
-        userId: 'usr-4',
-        userName: 'Bima Satria Perdana',
-        userNimNip: '230403019',
-        userPhone: '087811224455',
-        userRole: 'Mahasiswa',
-        roomCode: 'TIK.112',
-        roomName: 'Laboratorium Robotika & Otomasi Cerdas',
-        bookingDate: now.add(const Duration(days: 3)),
-        day: 'Selasa',
-        startSession: 7,
-        endSession: 10,
-        startTime: '13:30',
-        endTime: '17:10',
-        purpose: 'Riset / Tugas Akhir / Skripsi',
-        description: 'Kalibrasi sensor IMU & pengujian tracking robot otonom di lintasan lab.',
-        supervisorLecturer: 'Mustainul Abdi, SST., M.Kom.',
-        additionalFacilities: ['IoT Development Board (ESP32/Arduino/Sensor)'],
-        status: BookingStatus.pending,
-        createdAt: now.subtract(const Duration(hours: 3)),
-      ),
-    ]);
-  }
+  // Data peminjaman diisi dari Supabase (lihat supabase_booking_repository.dart)
+  // Tidak ada seed data dummy — mode produksi.
 
   List<BookingModel> getAllBookings() => List.unmodifiable(_bookings);
+
 
   List<BookingModel> getBookingsByUser(String userId) =>
       _bookings.where((b) => b.userId == userId).toList();

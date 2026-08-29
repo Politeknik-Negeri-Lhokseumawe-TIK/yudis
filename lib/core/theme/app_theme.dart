@@ -18,12 +18,13 @@ abstract class AppTheme {
         secondaryContainer: Color(0xFF3A2800),
         onSecondaryContainer: AppTokens.accentGoldLight,
         surface: AppTokens.bgDarkSurface,
-        onSurface: Color(0xFFF3E8FF),
+        onSurface: AppTokens.textOnDark,
         surfaceContainerHighest: AppTokens.bgDarkCard,
         error: AppTokens.error,
         onError: Colors.white,
         outline: Color(0xFF4C1D95),
         outlineVariant: Color(0xFF2E1065),
+        surfaceTint: AppTokens.primaryPurple,
       ),
       scaffoldBackgroundColor: AppTokens.bgDark,
       textTheme: _buildTextTheme(base.textTheme, const Color(0xFFECF5EF)),
@@ -52,18 +53,19 @@ abstract class AppTheme {
       ),
       chipTheme: _buildChipTheme(isDark: true),
       dividerTheme: const DividerThemeData(
-        color: Color(0x222A4A35),
+        color: Color(0x22A855F7), // Purple-tinted divider
         thickness: 1,
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.transparent,
-        selectedItemColor: AppTokens.primaryGreenLight,
-        unselectedItemColor: Color(0xFF5A7A65),
+        selectedItemColor: AppTokens.primaryPurpleLight,
+        unselectedItemColor: Color(0xFF5A4A7A), // Purple-muted
         elevation: 0,
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: AppTokens.primaryGreenLight,
+        backgroundColor: AppTokens.primaryPurpleLight,
         foregroundColor: Colors.white,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTokens.radiusXL),
         ),
@@ -80,28 +82,29 @@ abstract class AppTheme {
     );
   }
 
-  // ── Light Theme ───────────────────────────────────────────────
+  // ── Light Theme (Purple-Academic) ────────────────────────────
   static ThemeData get light {
     final base = ThemeData.light(useMaterial3: true);
     return base.copyWith(
       colorScheme: const ColorScheme.light(
-        primary: AppTokens.primaryGreen,
+        primary: AppTokens.primaryPurple,
         onPrimary: Colors.white,
-        primaryContainer: Color(0xFFD3F0DE),
-        onPrimaryContainer: AppTokens.primaryGreenDark,
+        primaryContainer: Color(0xFFEDE9FE),
+        onPrimaryContainer: AppTokens.primaryPurpleDark,
         secondary: AppTokens.accentGoldDark,
         onSecondary: Colors.white,
         secondaryContainer: Color(0xFFFFF3D0),
         onSecondaryContainer: AppTokens.accentGoldDark,
         surface: AppTokens.bgLightSurface,
-        onSurface: Color(0xFF1A2E22),
+        onSurface: Color(0xFF1A0B36),
         surfaceContainerHighest: AppTokens.bgLight,
         error: AppTokens.error,
-        outline: Color(0xFFB5D4C2),
-        outlineVariant: Color(0xFFDAEDE3),
+        outline: Color(0xFFDDD6FE),
+        outlineVariant: Color(0xFFEDE9FE),
+        surfaceTint: AppTokens.primaryPurple,
       ),
       scaffoldBackgroundColor: AppTokens.bgLight,
-      textTheme: _buildTextTheme(base.textTheme, const Color(0xFF1A2E22)),
+      textTheme: _buildTextTheme(base.textTheme, const Color(0xFF1A0B36)),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -110,9 +113,9 @@ abstract class AppTheme {
         titleTextStyle: GoogleFonts.plusJakartaSans(
           fontSize: AppTokens.textLG,
           fontWeight: FontWeight.w700,
-          color: AppTokens.primaryGreenDark,
+          color: AppTokens.primaryPurpleDark,
         ),
-        iconTheme: const IconThemeData(color: AppTokens.primaryGreenDark),
+        iconTheme: const IconThemeData(color: AppTokens.primaryPurpleDark),
       ),
       inputDecorationTheme: _buildInputTheme(isDark: false),
       elevatedButtonTheme: _buildElevatedButtonTheme(),
@@ -120,10 +123,10 @@ abstract class AppTheme {
       cardTheme: CardThemeData(
         color: Colors.white,
         elevation: 0,
-        shadowColor: AppTokens.primaryGreen.withValues(alpha: 0.12),
+        shadowColor: AppTokens.primaryPurple.withValues(alpha: 0.12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTokens.radiusLG),
-          side: const BorderSide(color: Color(0xFFE2F0E8)),
+          side: const BorderSide(color: Color(0xFFEDE9FE)),
         ),
       ),
       chipTheme: _buildChipTheme(isDark: false),
@@ -261,9 +264,9 @@ abstract class AppTheme {
   static OutlinedButtonThemeData _buildOutlinedButtonTheme({required bool isDark}) {
     return OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        foregroundColor: isDark ? AppTokens.primaryGreenLight : AppTokens.primaryGreen,
+        foregroundColor: isDark ? AppTokens.primaryPurpleLight : AppTokens.primaryPurple,
         side: BorderSide(
-          color: isDark ? AppTokens.primaryGreenLight : AppTokens.primaryGreen,
+          color: isDark ? AppTokens.primaryPurpleLight : AppTokens.primaryPurple,
         ),
         padding: const EdgeInsets.symmetric(
           horizontal: AppTokens.spaceLG,
@@ -282,7 +285,9 @@ abstract class AppTheme {
 
   static ChipThemeData _buildChipTheme({required bool isDark}) {
     return ChipThemeData(
-      backgroundColor: isDark ? const Color(0x1AFFFFFF) : const Color(0x0F0B5C2E),
+      backgroundColor: isDark
+          ? const Color(0x18A855F7)  // Purple tinted
+          : const Color(0x0F7C3AED), // Purple light
       labelStyle: GoogleFonts.poppins(
         fontSize: AppTokens.textXS,
         fontWeight: FontWeight.w500,
@@ -291,7 +296,9 @@ abstract class AppTheme {
         borderRadius: BorderRadius.circular(AppTokens.radiusCircle),
       ),
       side: BorderSide(
-        color: isDark ? const Color(0x30FFFFFF) : const Color(0x300B5C2E),
+        color: isDark
+            ? const Color(0x40A855F7) // Purple border dark
+            : const Color(0x307C3AED), // Purple border light
       ),
       padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceSM),
     );

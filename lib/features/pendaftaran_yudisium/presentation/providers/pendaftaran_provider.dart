@@ -414,13 +414,17 @@ class PendaftaranNotifier extends StateNotifier<PendaftaranState> {
       }).eq('id', p.id);
 
       // Ambil data user untuk log yang rapi
-      final userRow = await _supabase
-          .from('users')
-          .select('nama, nim')
-          .eq('id', p.userId)
-          .maybeSingle();
-      final namaMhs = userRow?['nama'] as String? ?? 'Mahasiswa';
-      final nimMhs = userRow?['nim'] as String? ?? '';
+      String namaMhs = 'Mahasiswa';
+      String nimMhs = '';
+      try {
+        final userRow = await _supabase
+            .from('profiles')
+            .select('nama, nim')
+            .eq('id', p.userId)
+            .maybeSingle();
+        namaMhs = userRow?['nama'] as String? ?? 'Mahasiswa';
+        nimMhs = userRow?['nim'] as String? ?? '';
+      } catch (_) {}
 
       // Log aktivitas
       await AdminRepository.logActivity(

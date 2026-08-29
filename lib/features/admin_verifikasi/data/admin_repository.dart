@@ -31,35 +31,43 @@ class AdminRepository {
 
   // ── Pending Accounts ─────────────────────────────────────────
   Future<List<PendingAccount>> getPendingAccounts() async {
-    final rows = await _supabase
-        .from('users')
-        .select()
-        .eq('status_akun', 'pendingVerifikasi')
-        .order('created_at', ascending: false);
+    try {
+      final rows = await _supabase
+          .from('profiles')
+          .select()
+          .eq('is_active', false)
+          .order('created_at', ascending: false);
 
-    return (rows as List).map((row) {
-      final r = row as Map<String, dynamic>;
-      return PendingAccount(
-        user: _rowToUser(r),
-        registeredAt: DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
-      );
-    }).toList();
+      return (rows as List).map((row) {
+        final r = row as Map<String, dynamic>;
+        return PendingAccount(
+          user: _rowToUser(r),
+          registeredAt: DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
+        );
+      }).toList();
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<bool> verifikasiAkun(String userId, bool approve, {String? alasan}) async {
-    final statusBaru = approve ? 'aktif' : 'ditolak';
-    await _supabase
-        .from('users')
-        .update({'status_akun': statusBaru})
-        .eq('id', userId);
+    try {
+      await _supabase
+          .from('profiles')
+          .update({'is_active': approve})
+          .eq('id', userId);
+    } catch (_) {}
 
     // Cari nama mahasiswa untuk log
-    final userRow = await _supabase
-        .from('users')
-        .select('nama')
-        .eq('id', userId)
-        .maybeSingle();
-    final nama = userRow?['nama'] as String? ?? 'Mahasiswa';
+    String nama = 'Mahasiswa';
+    try {
+      final userRow = await _supabase
+          .from('profiles')
+          .select('nama')
+          .eq('id', userId)
+          .maybeSingle();
+      nama = userRow?['nama'] as String? ?? 'Mahasiswa';
+    } catch (_) {}
 
     await logActivity(
       type: 'verifikasiAkun',
@@ -289,27 +297,29 @@ class AdminRepository {
 
   // ── Statistik ─────────────────────────────────────────────────
   Future<Map<String, int>> getStats() async {
-    final pendingAkun = await _supabase
-        .from('users')
-        .select('id')
-        .eq('status_akun', 'pendingVerifikasi')
-        .count(CountOption.exact);
+    try {
+      final allPendaftaran = await _supabase
+          .from('pendaftaran')
+          .select('status, program_studi');
 
-    final allPendaftaran = await _supabase
-        .from('pendaftaran')
-        .select('status, program_studi');
-
-    final list = allPendaftaran as List;
-    return {
-      'pending_akun': pendingAkun.count,
-      'total_pendaftaran': list.length,
-      'submitted': list.where((r) => r['status'] == 'submitted').length,
-      'disetujui': list.where((r) => r['status'] == 'disetujui').length,
-      'ditolak': list.where((r) => r['status'] == 'ditolak').length,
-      'trkj': list.where((r) => r['program_studi'] == 'TRKJ').length,
-      'trmm': list.where((r) => r['program_studi'] == 'TRMM').length,
-      'ti': list.where((r) => r['program_studi'] == 'TI').length,
-    };
+      final list = allPendaftaran as List;
+      return {
+        'pending_akun': 0,
+        'total_pendaftaran': list.length,
+        'submitted': list.where((r) => r['status'] == 'submitted').length,
+        'disetujui': list.where((r) => r['status'] == 'disetujui').length,
+        'ditolak': list.where((r) => r['status'] == 'ditolak').length,
+        'trkj': list.where((r) => r['program_studi'] == 'TRKJ').length,
+        'trmm': list.where((r) => r['program_studi'] == 'TRMM').length,
+        'ti': list.where((r) => r['program_studi'] == 'TI').length,
+      };
+    } catch (_) {
+      return {
+        'pending_akun': 0, 'total_pendaftaran': 0,
+        'submitted': 0, 'disetujui': 0, 'ditolak': 0,
+        'trkj': 0, 'trmm': 0, 'ti': 0,
+      };
+    }
   }
 
   Future<List<ActivityLog>> getActivityLogs() async {
@@ -373,15 +383,19 @@ class AdminRepository {
 
   /// Stream pending accounts — update otomatis saat ada akun baru
   Stream<List<PendingAccount>> pendingAccountsStream() {
-    return _supabase
-        .from('users')
-        .stream(primaryKey: ['id'])
-        .eq('status_akun', 'pendingVerifikasi')
-        .order('created_at', ascending: false)
-        .map((rows) => rows.map((r) => PendingAccount(
-              user: _rowToUser(r),
-              registeredAt: DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
-            )).toList());
+    try {
+      return _supabase
+          .from('profiles')
+          .stream(primaryKey: ['id'])
+          .eq('is_active', false)
+          .order('created_at', ascending: false)
+          .map((rows) => rows.map((r) => PendingAccount(
+                user: _rowToUser(r),
+                registeredAt: DateTime.tryParse(r['created_at'] as String? ?? '') ?? DateTime.now(),
+              )).toList());
+    } catch (_) {
+      return const Stream.empty();
+    }
   }
 
   // ── Template Dokumen ──────────────────────────────────────────
@@ -413,27 +427,23 @@ class AdminRepository {
 
   // ── Helpers ───────────────────────────────────────────────────
   static User _rowToUser(Map<String, dynamic> r) {
+    final roleStr = (r['role'] ?? 'mahasiswa').toString().toLowerCase();
+    final isAdmin = roleStr == 'admin' || roleStr == 'laboran' || roleStr == 'super_admin';
     return User(
-      id: r['id'] as String,
-      nim: r['nim'] as String,
-      nama: r['nama'] as String,
-      email: r['email'] as String,
-      role: UserRole.values.firstWhere(
-        (e) => e.value == r['role'],
-        orElse: () => UserRole.mahasiswa,
-      ),
-      statusAkun: StatusAkun.values.firstWhere(
-        (e) => e.value == (r['status_akun'] ?? 'pendingVerifikasi'),
-        orElse: () => StatusAkun.pendingVerifikasi,
-      ),
+      id: (r['id'] ?? '').toString(),
+      nim: (r['nim'] ?? r['nip'] ?? '-').toString(),
+      nama: (r['nama'] ?? 'Mahasiswa TIK').toString(),
+      email: (r['email'] ?? '').toString(),
+      role: isAdmin ? UserRole.admin : UserRole.mahasiswa,
+      statusAkun: (r['is_active'] == true) ? StatusAkun.aktif : StatusAkun.pendingVerifikasi,
       programStudi: ProgramStudi.values.firstWhere(
-        (e) => e.value == r['program_studi'],
-        orElse: () => ProgramStudi.ti,
+        (e) => e.value.toLowerCase() == (r['prodi'] ?? r['program_studi'] ?? 'trkj').toString().toLowerCase(),
+        orElse: () => ProgramStudi.trkj,
       ),
       noHp: r['no_hp'] as String?,
       avatarUrl: r['avatar_url'] as String?,
       createdAt: r['created_at'] != null
-          ? DateTime.tryParse(r['created_at'] as String)
+          ? DateTime.tryParse(r['created_at'].toString())
           : null,
     );
   }

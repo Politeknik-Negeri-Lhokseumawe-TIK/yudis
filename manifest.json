@@ -1,11 +1,11 @@
 {
-    "name": "Yudisium TIK PNL",
-    "short_name": "YudisiumTIK",
+    "name": "SIM-LAB & RUANG PBM TIK PNL",
+    "short_name": "SIM-LAB TIK",
     "start_url": ".",
     "display": "browser",
     "background_color": "#070410",
     "theme_color": "#7C3AED",
-    "description": "Sistem Pendaftaran Yudisium - Jurusan TIK Politeknik Negeri Lhokseumawe",
+    "description": "SIM-LAB & RUANG PBM - Sistem Manajemen Peminjaman Laboratorium & Ruang Kelas Belajar Jurusan TIK Politeknik Negeri Lhokseumawe",
     "orientation": "any",
     "prefer_related_applications": false,
     "icons": [

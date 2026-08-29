@@ -1,19 +1,6 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="/yudis/">
 
   <meta charset="UTF-8">
@@ -23,8 +10,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 
   <!-- SEO & Description -->
-  <meta name="description" content="Sistem Pendaftaran Yudisium Jurusan Teknologi Informasi dan Komputer - Politeknik Negeri Lhokseumawe">
-  <meta name="keywords" content="yudisium, PNL, TIK, politeknik, lhokseumawe, pendaftaran">
+  <meta name="description" content="SIM-LAB & RUANG PBM - Sistem Manajemen Peminjaman Laboratorium & Ruang Kelas Belajar Jurusan TIK Politeknik Negeri Lhokseumawe">
+  <meta name="keywords" content="SIM-LAB, peminjaman lab, ruang kelas, PNL, TIK, politeknik, lhokseumawe, roster digital">
   <meta name="author" content="Politeknik Negeri Lhokseumawe">
 
   <!-- Theme color untuk browser chrome (Android/desktop) -->
@@ -34,20 +21,20 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Yudisium TIK PNL">
+  <meta name="apple-mobile-web-app-title" content="SIM-LAB TIK PNL">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Open Graph (untuk sharing) -->
-  <meta property="og:title" content="Yudisium TIK PNL">
-  <meta property="og:description" content="Sistem Pendaftaran Yudisium - Jurusan TIK Politeknik Negeri Lhokseumawe">
+  <meta property="og:title" content="SIM-LAB & RUANG PBM TIK PNL">
+  <meta property="og:description" content="Sistem Manajemen Peminjaman Laboratorium & Ruang Kelas Belajar - Jurusan TIK Politeknik Negeri Lhokseumawe">
   <meta property="og:type" content="website">
 
   <!-- Favicon & App Icons with Cache Busting -->
-  <link rel="icon" type="image/jpeg" href="logo_pnl.jpg?v=3"/>
-  <link rel="shortcut icon" type="image/jpeg" href="logo_pnl.jpg?v=3"/>
-  <link rel="apple-touch-icon" href="logo_pnl.jpg?v=3"/>
+  <link rel="icon" type="image/jpeg" href="logo_pnl.jpg?v=4"/>
+  <link rel="shortcut icon" type="image/jpeg" href="logo_pnl.jpg?v=4"/>
+  <link rel="apple-touch-icon" href="logo_pnl.jpg?v=4"/>
 
-  <title>Sistem Informasi Yudisium TIK PNL</title>
+  <title>SIM-LAB & RUANG PBM TIK PNL</title>
   <link rel="manifest" href="manifest.json">
 
   <style>
@@ -59,74 +46,71 @@
     body {
       background-color: #070410;
       color: #FFFFFF;
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       overflow: hidden;
-      width: 100vw;
-      height: 100vh;
     }
     #loading-splash {
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: radial-gradient(circle at center, #1E1038 0%, #070410 70%);
+      background: radial-gradient(circle at center, #130B24 0%, #070410 100%);
       z-index: 999999;
       transition: opacity 0.5s ease-out;
     }
     .logo-wrapper {
       position: relative;
-      width: 120px;
-      height: 120px;
-      margin-bottom: 24px;
+      width: 110px;
+      height: 110px;
       display: flex;
       align-items: center;
       justify-content: center;
+      margin-bottom: 24px;
     }
     .logo-glow {
       position: absolute;
-      width: 130px;
-      height: 130px;
+      width: 100%;
+      height: 100%;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(124, 58, 237, 0.45) 0%, rgba(245, 158, 11, 0.2) 60%, transparent 80%);
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.45) 0%, rgba(245, 158, 11, 0.15) 60%, transparent 80%);
       animation: pulseGlow 2.5s infinite ease-in-out;
     }
     .logo-ring {
       position: absolute;
-      width: 124px;
-      height: 124px;
+      width: 106px;
+      height: 106px;
       border-radius: 50%;
-      border: 2px solid transparent;
-      border-top-color: #7C3AED;
-      border-right-color: #F59E0B;
-      animation: spinRing 2s linear infinite;
+      border: 2px dashed rgba(167, 139, 250, 0.4);
+      animation: spinRing 12s linear infinite;
     }
     .logo-img {
-      width: 100px;
-      height: 100px;
+      width: 82px;
+      height: 82px;
       border-radius: 50%;
       object-fit: cover;
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(124, 58, 237, 0.35);
+      border: 2px solid rgba(245, 158, 11, 0.6);
+      position: relative;
       z-index: 2;
     }
     .title-text {
-      font-size: 20px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
+      font-size: 19px;
+      font-weight: 800;
       color: #FFFFFF;
+      letter-spacing: 0.5px;
       margin-bottom: 6px;
       text-align: center;
     }
     .subtitle-text {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       color: #F59E0B;
-      letter-spacing: 1px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       margin-bottom: 28px;
       text-align: center;
@@ -172,7 +156,7 @@
       <div class="logo-ring"></div>
       <img class="logo-img" src="logo_pnl.jpg" alt="Logo Politeknik Negeri Lhokseumawe" />
     </div>
-    <div class="title-text">Sistem Informasi Yudisium</div>
+    <div class="title-text">SIM-LAB & RUANG PBM</div>
     <div class="subtitle-text">Jurusan TIK • Politeknik Negeri Lhokseumawe</div>
     <div class="loader-bar">
       <div class="loader-progress"></div>

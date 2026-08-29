@@ -6,6 +6,9 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../../shared/widgets/cyber_card.dart';
+import '../../../../shared/widgets/neon_stat_card.dart';
+import '../../../../shared/widgets/cyber_status_badge.dart';
+import '../../../../shared/widgets/ui_primitives.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/models/booking_model.dart';
 import '../providers/booking_provider.dart';
@@ -128,17 +131,33 @@ class DashboardPeminjamScreen extends ConsumerWidget {
             ),
           ),
 
-          // ── Quick Stats ─────────────────────────────────────────────
+          // ── Quick Stats: Cyber Neon Stat Row ────────────────────────
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  _buildStatCard('Disetujui / Aktif', '$activeCount', AppTokens.primaryPurpleGlow, Icons.check_circle_outline),
-                  const SizedBox(width: 10),
-                  _buildStatCard('Menunggu', '$pendingCount', AppTokens.accentGold, Icons.hourglass_top_rounded),
-                  const SizedBox(width: 10),
-                  _buildStatCard('Selesai', '$completedCount', AppTokens.success, Icons.verified_rounded),
+              child: NeonStatRow(
+                cards: [
+                  NeonStatCard(
+                    title: 'Aktif / Disetujui',
+                    value: '$activeCount',
+                    icon: Icons.verified_rounded,
+                    color: AppTokens.success,
+                    delay: Duration.zero,
+                  ),
+                  NeonStatCard(
+                    title: 'Menunggu',
+                    value: '$pendingCount',
+                    icon: Icons.hourglass_top_rounded,
+                    color: AppTokens.accentGold,
+                    delay: const Duration(milliseconds: 100),
+                  ),
+                  NeonStatCard(
+                    title: 'Selesai',
+                    value: '$completedCount',
+                    icon: Icons.task_alt_rounded,
+                    color: AppTokens.primaryPurpleLight,
+                    delay: const Duration(milliseconds: 200),
+                  ),
                 ],
               ),
             ),
@@ -265,12 +284,16 @@ class DashboardPeminjamScreen extends ConsumerWidget {
           ),
 
           if (myBookings.isEmpty)
-            const SliverFillRemaining(
+            SliverFillRemaining(
               hasScrollBody: false,
-              child: Center(
-                child: Text(
-                  'Belum ada riwayat peminjaman.',
-                  style: TextStyle(color: Colors.white54),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+                child: EmptyStateWidget(
+                  title: 'Belum Ada Peminjaman',
+                  subtitle: 'Laboratorium & ruang kelas siap digunakan. Ajukan peminjaman sekarang dengan deteksi bentrok jadwal otomatis.',
+                  icon: Icons.meeting_room_outlined,
+                  actionLabel: 'Ajukan Peminjaman Sekarang',
+                  action: () => context.push('/form-peminjaman'),
                 ),
               ),
             )
@@ -289,41 +312,6 @@ class DashboardPeminjamScreen extends ConsumerWidget {
             ),
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String count, Color color, IconData icon) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppTokens.bgDarkCard,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, size: 16, color: color),
-                const Spacer(),
-                Text(
-                  count,
-                  style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: const TextStyle(color: Colors.white70, fontSize: 11),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -374,15 +362,6 @@ class DashboardPeminjamScreen extends ConsumerWidget {
   }
 
   Widget _buildBookingItemCard(BuildContext context, BookingModel booking, int index) {
-    Color statusColor = AppTokens.accentGold;
-    if (booking.status == BookingStatus.approved || booking.status == BookingStatus.active) {
-      statusColor = AppTokens.primaryPurpleGlow;
-    } else if (booking.status == BookingStatus.completed) {
-      statusColor = AppTokens.success;
-    } else if (booking.status == BookingStatus.rejected) {
-      statusColor = AppTokens.error;
-    }
-
     final isLab = booking.roomCode.startsWith('TIK.1') || booking.roomCode.startsWith('TDC');
 
     return CyberCard(
@@ -420,18 +399,7 @@ class DashboardPeminjamScreen extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: statusColor.withValues(alpha: 0.5)),
-                  ),
-                  child: Text(
-                    booking.statusLabel,
-                    style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold),
-                  ),
-                ),
+                CyberStatusBadge.fromBookingStatus(booking.status.name),
               ],
             ),
             const SizedBox(height: 8),

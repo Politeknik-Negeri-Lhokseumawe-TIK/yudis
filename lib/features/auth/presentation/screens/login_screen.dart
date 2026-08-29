@@ -835,49 +835,110 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildHeader(BuildContext context) {
     return Column(
       children: [
-        // Logo
+        // High-Tech Glowing Logo with Scan-line Pulse
         Container(
-          width: 80,
-          height: 80,
+          width: 90,
+          height: 90,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.1),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            color: AppTokens.primaryPurple.withValues(alpha: 0.15),
+            border: Border.all(
+              color: AppTokens.primaryPurpleLight,
+              width: 2.0,
+            ),
+            boxShadow: AppTokens.shadowNeonIntense(AppTokens.primaryPurpleLight),
           ),
-          padding: const EdgeInsets.all(8),
-          child: ClipOval(
-            child: Image.asset(
-              'assets/images/logo_pnl.jpg',
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Center(
-                child: Text(
-                  'PNL',
-                  style: TextStyle(
-                    color: AppTokens.accentGold,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 20,
+          padding: const EdgeInsets.all(10),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              ClipOval(
+                child: Image.asset(
+                  'assets/images/logo_pnl.jpg',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const Center(
+                    child: Text(
+                      'TIK',
+                      style: TextStyle(
+                        color: AppTokens.accentGold,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+              // Scan-line animation effect
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        AppTokens.primaryPurpleGlow.withValues(alpha: 0.25),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
+        )
+            .animate(onPlay: (c) => c.repeat(reverse: true))
+            .scale(begin: const Offset(0.97, 0.97), end: const Offset(1.03, 1.03), duration: 2000.ms, curve: Curves.easeInOut)
+            .then()
+            .shimmer(duration: 1800.ms, color: AppTokens.primaryPurpleGlow.withValues(alpha: 0.4)),
         const SizedBox(height: AppTokens.spaceMD),
         Text(
-          'Selamat Datang',
+          'SIM-LAB & RUANG PBM',
           style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                 color: Colors.white,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.2,
+                shadows: [
+                  Shadow(
+                    color: AppTokens.primaryPurpleLight.withValues(alpha: 0.6),
+                    blurRadius: 16,
+                  ),
+                ],
               ),
         ),
         const SizedBox(height: AppTokens.spaceXXS),
-        Text(
-          'Masuk ke SIM-LAB & RUANG PBM TIK PNL',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white60,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+          decoration: BoxDecoration(
+            color: AppTokens.primaryPurple.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppTokens.primaryPurpleLight.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTokens.success,
+                ),
               ),
-          textAlign: TextAlign.center,
-        ),
+              const SizedBox(width: 6),
+              Text(
+                'Jurusan TIK • Politeknik Negeri Lhokseumawe',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTokens.primaryPurpleGlow,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
+              ),
+            ],
+          ),
+        ).animate().fadeIn(delay: 200.ms).slideY(begin: 0.2, end: 0),
         const SizedBox(height: 16),
         // ── Pilihan Cepat 3 Komputer ──────
         Wrap(

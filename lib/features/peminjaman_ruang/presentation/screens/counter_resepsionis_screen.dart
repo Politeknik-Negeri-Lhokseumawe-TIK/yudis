@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_tokens.dart';
+import '../../../../shared/widgets/ui_primitives.dart';
 import '../../domain/models/booking_model.dart';
 import '../../domain/models/receptionist_officer_model.dart';
 import '../../domain/models/room_model.dart';
@@ -461,37 +462,10 @@ class _CounterResepsionisScreenState
               ],
             ),
           ),
-          const SizedBox(width: 16),
-
-          // Live Clock WIB
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF334155)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.access_time_filled_rounded, color: AppTokens.accentGold, size: 14),
-                    const SizedBox(width: 6),
-                    Text(
-                      '$timeStr WIB',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'monospace',
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(dateStr, style: const TextStyle(color: Colors.white54, fontSize: 10)),
-              ],
-            ),
+          // Live Clock WIB with Monospace Glow
+          DigitalClockWidget(
+            time: timeStr,
+            dateStr: dateStr,
           ),
           const SizedBox(width: 12),
 

@@ -6,6 +6,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../../shared/widgets/cyber_card.dart';
 import '../../../../shared/widgets/cyber_button.dart';
+import '../../../../shared/widgets/ui_primitives.dart';
 import '../../domain/models/roster_item_model.dart';
 import '../providers/roster_provider.dart';
 
@@ -40,11 +41,42 @@ class _RosterDigitalScreenState extends ConsumerState<RosterDigitalScreen>
     super.dispose();
   }
 
+  int _getCurrentSession() {
+    final now = DateTime.now();
+    final totalMinutes = now.hour * 60 + now.minute;
+    if (totalMinutes >= 7 * 60 + 30 && totalMinutes < 8 * 60 + 20) return 1;
+    if (totalMinutes >= 8 * 60 + 20 && totalMinutes < 9 * 60 + 10) return 2;
+    if (totalMinutes >= 9 * 60 + 10 && totalMinutes < 10 * 60 + 0) return 3;
+    if (totalMinutes >= 10 * 60 + 20 && totalMinutes < 11 * 60 + 10) return 4;
+    if (totalMinutes >= 11 * 60 + 10 && totalMinutes < 12 * 60 + 0) return 5;
+    if (totalMinutes >= 12 * 60 + 0 && totalMinutes < 12 * 60 + 50) return 6;
+    if (totalMinutes >= 13 * 60 + 30 && totalMinutes < 14 * 60 + 20) return 7;
+    if (totalMinutes >= 14 * 60 + 20 && totalMinutes < 15 * 60 + 10) return 8;
+    if (totalMinutes >= 15 * 60 + 10 && totalMinutes < 16 * 60 + 0) return 9;
+    if (totalMinutes >= 16 * 60 + 20 && totalMinutes < 17 * 60 + 10) return 10;
+    if (totalMinutes >= 17 * 60 + 10 && totalMinutes < 18 * 60 + 0) return 11;
+    return 1;
+  }
+
+  String _getTodayName() {
+    switch (DateTime.now().weekday) {
+      case 1: return 'Senin';
+      case 2: return 'Selasa';
+      case 3: return 'Rabu';
+      case 4: return 'Kamis';
+      case 5: return 'Jumat';
+      default: return 'Senin';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredSchedules = ref.watch(filteredRosterProvider);
     final filter = ref.watch(rosterFilterProvider);
     final allRooms = ref.watch(roomsProvider);
+    final currentSession = _getCurrentSession();
+    final todayName = _getTodayName();
+    final activeNowSchedules = filteredSchedules.where((s) => s.day.toLowerCase() == todayName.toLowerCase() && s.startSession <= currentSession && s.endSession >= currentSession).toList();
 
     return Scaffold(
       backgroundColor: AppTokens.bgDark,
@@ -150,6 +182,16 @@ class _RosterDigitalScreenState extends ConsumerState<RosterDigitalScreen>
                   ],
                 ),
               ),
+            ),
+          ),
+
+          // ── Active Session Live Banner ──────────────────────────────
+          SliverToBoxAdapter(
+            child: ActiveSessionBanner(
+              sessionNumber: currentSession,
+              startTime: AppConstants.timeSlots.firstWhere((s) => s['session'] == currentSession, orElse: () => {'start': '07:30'})['start'] as String,
+              endTime: AppConstants.timeSlots.firstWhere((s) => s['session'] == currentSession, orElse: () => {'end': '08:20'})['end'] as String,
+              activeCount: activeNowSchedules.length,
             ),
           ),
 

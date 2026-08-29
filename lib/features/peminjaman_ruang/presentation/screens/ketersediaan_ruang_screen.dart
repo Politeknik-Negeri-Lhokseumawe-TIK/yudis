@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_tokens.dart';
 import '../../../../shared/widgets/cyber_card.dart';
+import '../../../../shared/widgets/cyber_status_badge.dart';
 import '../../domain/models/booking_model.dart';
 import '../../domain/models/room_model.dart';
 import '../../domain/models/roster_item_model.dart';
@@ -26,6 +27,7 @@ class _KetersediaanRuangScreenState
   String _selectedDay = 'Senin';
   String _categoryFilter = 'Semua'; // Semua, Lab, Teori, Studio
   String _searchQuery = '';
+  bool _isGridView = false;
 
   @override
   void initState() {
@@ -88,8 +90,16 @@ class _KetersediaanRuangScreenState
         ),
         actions: [
           IconButton(
+            tooltip: _isGridView ? 'Tampilan List Detail' : 'Tampilan Grid Kiosk',
+            icon: Icon(
+              _isGridView ? Icons.view_list_rounded : Icons.grid_view_rounded,
+              color: AppTokens.primaryPurpleGlow,
+            ),
+            onPressed: () => setState(() => _isGridView = !_isGridView),
+          ),
+          IconButton(
             tooltip: 'Roster Digital Lengkap',
-            icon: const Icon(Icons.calendar_month_rounded, color: AppTokens.primaryPurpleGlow),
+            icon: const Icon(Icons.calendar_month_rounded, color: AppTokens.accentGold),
             onPressed: () => context.push('/roster-digital'),
           ),
           const SizedBox(width: 8),
@@ -228,22 +238,52 @@ class _KetersediaanRuangScreenState
             ),
           ),
 
-          // ── Rooms Matrix List ───────────────────────────────────────
+          // ── Rooms Matrix / Grid List ───────────────────────────────
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: filteredRooms.length,
-              itemBuilder: (context, index) {
-                final room = filteredRooms[index];
-                return _buildRoomAvailabilityCard(
-                  context,
-                  room,
-                  allSchedules,
-                  allBookings,
-                  index,
-                );
-              },
-            ),
+            child: _isGridView
+                ? SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: RoomStatusGrid(
+                      crossAxisCount: MediaQuery.of(context).size.width > 900 ? 6 : (MediaQuery.of(context).size.width > 600 ? 4 : 2),
+                      spacing: 12,
+                      tiles: filteredRooms.map((room) {
+                        final daySchedules = allSchedules.where((s) => s.roomCode == room.id && s.day.toLowerCase() == _selectedDay.toLowerCase()).toList();
+                        final dayBookings = allBookings.where((b) => b.roomCode == room.id && b.day.toLowerCase() == _selectedDay.toLowerCase() && (b.status == BookingStatus.approved || b.status == BookingStatus.active)).toList();
+                        
+                        RoomTileStatus status = RoomTileStatus.available;
+                        String sessionLabel = 'Tersedia';
+                        if (daySchedules.isNotEmpty) {
+                          status = RoomTileStatus.classPBM;
+                          sessionLabel = '${daySchedules.length} Sesi PBM';
+                        } else if (dayBookings.isNotEmpty) {
+                          status = RoomTileStatus.borrowed;
+                          sessionLabel = 'Dipinjam';
+                        }
+
+                        return RoomStatusTile(
+                          roomCode: room.id,
+                          roomName: room.name,
+                          status: status,
+                          sessionLabel: sessionLabel,
+                          onTap: () => context.push('/form-peminjaman'),
+                        );
+                      }).toList(),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: filteredRooms.length,
+                    itemBuilder: (context, index) {
+                      final room = filteredRooms[index];
+                      return _buildRoomAvailabilityCard(
+                        context,
+                        room,
+                        allSchedules,
+                        allBookings,
+                        index,
+                      );
+                    },
+                  ),
           ),
         ],
       ),

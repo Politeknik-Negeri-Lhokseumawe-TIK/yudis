@@ -49,6 +49,7 @@ class _FormPeminjamanScreenState extends ConsumerState<FormPeminjamanScreen> {
   final List<String> _selectedFacilities = [];
   ConflictCheckResult? _conflictResult;
   bool _isLoading = false;
+  int _currentStep = 1; // 1: Ruangan & Waktu, 2: Identitas Pemohon, 3: Fasilitas & Konfirmasi
 
   @override
   void initState() {
@@ -152,8 +153,28 @@ class _FormPeminjamanScreenState extends ConsumerState<FormPeminjamanScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // ── Step Progress Indicator ──────────────────────────────
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppTokens.bgDarkSurface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTokens.glassBorderColor),
+              ),
+              child: Row(
+                children: [
+                  _buildWizardStepNode(1, 'Ruang & Waktu', _currentStep >= 1, _currentStep == 1),
+                  Expanded(child: Container(height: 2, color: _currentStep >= 2 ? AppTokens.primaryPurpleGlow : Colors.white12)),
+                  _buildWizardStepNode(2, 'Pemohon', _currentStep >= 2, _currentStep == 2),
+                  Expanded(child: Container(height: 2, color: _currentStep >= 3 ? AppTokens.primaryPurpleGlow : Colors.white12)),
+                  _buildWizardStepNode(3, 'Review & Kirim', _currentStep >= 3, _currentStep == 3),
+                ],
+              ),
+            ),
+
             // ── Conflict Check Banner ─────────────────────────────────
-            if (_conflictResult != null)
+            if (_conflictResult != null && _currentStep == 1)
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(14),
@@ -206,7 +227,8 @@ class _FormPeminjamanScreenState extends ConsumerState<FormPeminjamanScreen> {
                 ),
               ).animate().fadeIn(duration: 200.ms),
 
-            // ── Section 1: Pemilihan Ruangan & Waktu ──────────────────
+            if (_currentStep == 1) ...[
+              // ── Section 1: Pemilihan Ruangan & Waktu ──────────────────
             CyberCard(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -388,8 +410,8 @@ class _FormPeminjamanScreenState extends ConsumerState<FormPeminjamanScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-
+          ],
+          if (_currentStep == 2) ...[
             // ── Section 2: Data Pemohon & Keperluan ───────────────────
             CyberCard(
               child: Padding(
@@ -491,12 +513,11 @@ class _FormPeminjamanScreenState extends ConsumerState<FormPeminjamanScreen> {
                       dropdownColor: AppTokens.bgDarkCard,
                       style: const TextStyle(color: Colors.white, fontSize: 13),
                       decoration: InputDecoration(
-                        labelText: 'Tujuan / Keperluan Peminjaman',
+                        labelText: 'Kategori Keperluan',
                         labelStyle: const TextStyle(color: Colors.white70),
                         filled: true,
                         fillColor: AppTokens.bgDarkSurface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        prefixIcon: const Icon(Icons.assignment_rounded, color: AppTokens.accentGold),
                       ),
                       items: AppConstants.bookingPurposes.map((p) {
                         return DropdownMenuItem(value: p, child: Text(p));
@@ -517,10 +538,10 @@ class _FormPeminjamanScreenState extends ConsumerState<FormPeminjamanScreen> {
                         filled: true,
                         fillColor: AppTokens.bgDarkSurface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                        prefixIcon: const Icon(Icons.person_pin_rounded, color: AppTokens.info),
+                        prefixIcon: const Icon(Icons.school_rounded, color: Colors.white54),
                       ),
                       validator: (val) =>
-                          val == null || val.isEmpty ? 'Dosen PJ wajib diisi' : null,
+                          val == null || val.isEmpty ? 'Wajib mengisi dosen PJ' : null,
                     ),
                     const SizedBox(height: 12),
 
@@ -530,23 +551,21 @@ class _FormPeminjamanScreenState extends ConsumerState<FormPeminjamanScreen> {
                       maxLines: 3,
                       style: const TextStyle(color: Colors.white, fontSize: 13),
                       decoration: InputDecoration(
-                        labelText: 'Uraian Kegiatan / Deskripsi Singkat',
+                        labelText: 'Rincian Kegiatan / Judul Tugas / Praktikum',
                         labelStyle: const TextStyle(color: Colors.white70),
-                        hintText: 'Contoh: Pengujian proyek tugas akhir implementasi deep learning...',
-                        hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
                         filled: true,
                         fillColor: AppTokens.bgDarkSurface,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       validator: (val) =>
-                          val == null || val.isEmpty ? 'Uraian kegiatan wajib diisi' : null,
+                          val == null || val.isEmpty ? 'Wajib menuliskan deskripsi' : null,
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-
+          ],
+          if (_currentStep == 3) ...[
             // ── Section 3: Fasilitas Tambahan yang Dipinjam ────────────
             CyberCard(
               child: Padding(
@@ -589,21 +608,113 @@ class _FormPeminjamanScreenState extends ConsumerState<FormPeminjamanScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 24),
-
-            // ── Submit Button ─────────────────────────────────────────
-            CyberButton(
-              text: hasConflict
-                  ? 'Jadwal Bentrok (Tidak Dapat Diajukan)'
-                  : 'Ajukan Permohonan Peminjaman',
-              icon: Icons.send_rounded,
-              isLoading: _isLoading,
-              onPressed: hasConflict ? null : _submitBooking,
+            const SizedBox(height: 16),
+            // Review summary card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTokens.bgDarkSurface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTokens.primaryPurpleGlow.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Ringkasan Permohonan:', style: TextStyle(color: AppTokens.accentGold, fontWeight: FontWeight.bold, fontSize: 13)),
+                  const SizedBox(height: 8),
+                  Text('• Ruangan: ${selectedRoom.id} - ${selectedRoom.name}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text('• Waktu: ${_getDayName(_selectedDate)}, ${DateFormat('dd MMM yyyy').format(_selectedDate)} (Sesi $_startSession-$_endSession)', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text('• Pemohon: ${_nameCtrl.text.isNotEmpty ? _nameCtrl.text : "(Isi pada langkah 2)"} (${_nimNipCtrl.text})', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text('• Keperluan: $_selectedPurpose', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                ],
+              ),
             ),
-            const SizedBox(height: 40),
           ],
-        ),
+          const SizedBox(height: 24),
+
+          // ── Step Navigation Buttons ───────────────────────────────
+          Row(
+            children: [
+              if (_currentStep > 1)
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: const BorderSide(color: Colors.white24),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.arrow_back_rounded, size: 16),
+                    label: const Text('Sebelumnya'),
+                    onPressed: () => setState(() => _currentStep--),
+                  ),
+                ),
+              if (_currentStep > 1) const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: CyberButton(
+                  text: _currentStep < 3
+                      ? 'Lanjutkan Langkah ${_currentStep + 1}'
+                      : (hasConflict ? 'Jadwal Bentrok (Tidak Dapat Diajukan)' : 'Ajukan Permohonan Peminjaman'),
+                  icon: _currentStep < 3 ? Icons.arrow_forward_rounded : Icons.send_rounded,
+                  isLoading: _isLoading,
+                  onPressed: (_currentStep == 1 && hasConflict)
+                      ? null
+                      : () {
+                          if (_currentStep < 3) {
+                            if (_currentStep == 2 && !_formKey.currentState!.validate()) return;
+                            setState(() => _currentStep++);
+                          } else {
+                            if (!hasConflict) _submitBooking();
+                          }
+                        },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 40),
+        ],
       ),
+    ),
+  );
+}
+
+  Widget _buildWizardStepNode(int step, String label, bool isCompleted, bool isCurrent) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isCurrent
+                ? AppTokens.primaryPurple
+                : (isCompleted ? AppTokens.success : Colors.white12),
+            border: Border.all(
+              color: isCurrent ? AppTokens.primaryPurpleGlow : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          child: Center(
+            child: isCompleted && !isCurrent
+                ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                : Text(
+                    '$step',
+                    style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: isCurrent ? Colors.white : (isCompleted ? Colors.white70 : Colors.white38),
+            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 

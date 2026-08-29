@@ -6,19 +6,16 @@ import '../features/auth/presentation/screens/splash_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/register_screen.dart';
 import '../features/auth/presentation/screens/pending_screen.dart';
-import '../features/pendaftaran_yudisium/presentation/screens/dashboard_mahasiswa_screen.dart';
-import '../features/pendaftaran_yudisium/presentation/screens/form_pendaftaran_screen.dart';
-import '../features/pendaftaran_yudisium/presentation/screens/status_pendaftaran_screen.dart';
-import '../features/admin_verifikasi/presentation/screens/admin_dashboard_screen.dart';
-import '../features/admin_verifikasi/presentation/screens/verifikasi_akun_screen.dart';
-import '../features/admin_verifikasi/presentation/screens/verifikasi_berkas_screen.dart';
-import '../features/admin_verifikasi/presentation/screens/kelola_periode_screen.dart';
-import '../features/admin_verifikasi/presentation/screens/rekap_screen.dart';
+import '../features/peminjaman_ruang/presentation/screens/dashboard_peminjam_screen.dart';
+import '../features/peminjaman_ruang/presentation/screens/roster_digital_screen.dart';
+import '../features/peminjaman_ruang/presentation/screens/ketersediaan_ruang_screen.dart';
+import '../features/peminjaman_ruang/presentation/screens/form_peminjaman_screen.dart';
+import '../features/peminjaman_ruang/presentation/screens/pengembalian_ruang_screen.dart';
+import '../features/peminjaman_ruang/presentation/screens/detail_peminjaman_screen.dart';
+import '../features/admin_verifikasi/presentation/screens/admin_peminjaman_dashboard_screen.dart';
 import '../features/notifikasi/presentation/screens/notifikasi_screen.dart';
 
-/// GoRouter config dengan role-based routing dan fade/slide transition.
-/// Sidebar ditangani oleh SidebarAwareScaffold di dalam setiap screen —
-/// tidak menggunakan ShellRoute agar menghindari nested-Scaffold layout errors.
+/// GoRouter config untuk Sistem Manajemen Peminjaman Lab & Ruang Kelas (SIM-LAB TIK PNL)
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authProvider);
 
@@ -46,20 +43,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/mahasiswa/dashboard';
       }
 
-      // Jika mahasiswa masih pending verifikasi dan mencoba akses form pendaftaran secara langsung
-      if (!authState.isAdmin &&
-          authState.isPendingVerifikasi &&
-          location == '/mahasiswa/daftar') {
-        return '/mahasiswa/dashboard';
-      }
-
-      if (authState.isAdmin && location.startsWith('/mahasiswa')) {
-        return '/admin/dashboard';
-      }
-      if (!authState.isAdmin && location.startsWith('/admin')) {
-        return '/mahasiswa/dashboard';
-      }
-
       return null;
     },
     routes: [
@@ -69,7 +52,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         redirect: (context, state) => '/splash',
       ),
 
-      // ── Auth pages (tidak perlu sidebar) ────────────────────────────
+      // ── Auth pages ──────────────────────────────────────────────────
       GoRoute(
         path: '/splash',
         pageBuilder: (context, state) => _fadeTransition(
@@ -99,93 +82,91 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // ── Mahasiswa routes ─────────────────────────────────────────────
+      // ── Roster & Availability (Public / Authenticated) ──────────────
+      GoRoute(
+        path: '/roster-digital',
+        pageBuilder: (context, state) => _slideTransition(
+          key: state.pageKey,
+          child: const RosterDigitalScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/ketersediaan-ruangan',
+        pageBuilder: (context, state) {
+          final roomCode = state.uri.queryParameters['roomCode'];
+          return _slideTransition(
+            key: state.pageKey,
+            child: KetersediaanRuangScreen(initialRoomCode: roomCode),
+          );
+        },
+      ),
+
+      // ── Peminjaman & Checkout Workflow ──────────────────────────────
+      GoRoute(
+        path: '/form-peminjaman',
+        pageBuilder: (context, state) {
+          final room = state.uri.queryParameters['prefillRoom'];
+          final day = state.uri.queryParameters['prefillDay'];
+          final sessionStr = state.uri.queryParameters['prefillSession'];
+          final session = sessionStr != null ? int.tryParse(sessionStr) : null;
+          return _slideTransition(
+            key: state.pageKey,
+            child: FormPeminjamanScreen(
+              prefillRoom: room,
+              prefillDay: day,
+              prefillSession: session,
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/pengembalian-ruang',
+        pageBuilder: (context, state) {
+          final bookingId = state.uri.queryParameters['bookingId'] ?? '';
+          return _slideTransition(
+            key: state.pageKey,
+            child: PengembalianRuangScreen(bookingId: bookingId),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/detail-peminjaman',
+        pageBuilder: (context, state) {
+          final bookingId = state.uri.queryParameters['bookingId'] ?? '';
+          return _slideTransition(
+            key: state.pageKey,
+            child: DetailPeminjamanScreen(bookingId: bookingId),
+          );
+        },
+      ),
+
+      // ── Mahasiswa Dashboard & Notifikasi ─────────────────────────────
       GoRoute(
         path: '/mahasiswa/dashboard',
         pageBuilder: (context, state) => _fadeTransition(
           key: state.pageKey,
-          child: const DashboardMahasiswaScreen(),
+          child: const DashboardPeminjamScreen(),
         ),
       ),
       GoRoute(
-        path: '/mahasiswa/daftar',
-        pageBuilder: (context, state) => _slideTransition(
-          key: state.pageKey,
-          child: const FormPendaftaranScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/mahasiswa/status',
-        pageBuilder: (context, state) => _slideTransition(
-          key: state.pageKey,
-          child: const StatusPendaftaranScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/mahasiswa/status/:id',
-        pageBuilder: (context, state) => _slideTransition(
-          key: state.pageKey,
-          child: StatusPendaftaranScreen(
-            id: state.pathParameters['id'],
-          ),
-        ),
-      ),
-      GoRoute(
-        path: '/mahasiswa/notifikasi',
+        path: '/notifikasi',
         pageBuilder: (context, state) => _slideTransition(
           key: state.pageKey,
           child: const NotifikasiScreen(),
         ),
       ),
 
-      // ── Admin routes ─────────────────────────────────────────────────
+      // ── Admin / Laboran Dashboard ────────────────────────────────────
       GoRoute(
         path: '/admin/dashboard',
         pageBuilder: (context, state) => _fadeTransition(
           key: state.pageKey,
-          child: const AdminDashboardScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/admin/akun/pending',
-        pageBuilder: (context, state) => _slideTransition(
-          key: state.pageKey,
-          child: const VerifikasiAkunScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/admin/yudisium',
-        pageBuilder: (context, state) => _slideTransition(
-          key: state.pageKey,
-          child: const VerifikasiBerkasScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/admin/yudisium/:id',
-        pageBuilder: (context, state) => _slideTransition(
-          key: state.pageKey,
-          child: VerifikasiBerkasScreen(
-            pendaftaranId: state.pathParameters['id'],
-          ),
-        ),
-      ),
-      GoRoute(
-        path: '/admin/periode',
-        pageBuilder: (context, state) => _slideTransition(
-          key: state.pageKey,
-          child: const KelolaPeriodeScreen(),
-        ),
-      ),
-      GoRoute(
-        path: '/admin/rekap',
-        pageBuilder: (context, state) => _slideTransition(
-          key: state.pageKey,
-          child: const RekapScreen(),
+          child: const AdminPeminjamanDashboardScreen(),
         ),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
-      backgroundColor: const Color(0xFF061A0E),
+      backgroundColor: const Color(0xFF070410),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -200,21 +181,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                   shape: BoxShape.circle,
                   border: Border.all(color: Colors.white24),
                 ),
-                child: const Icon(Icons.broken_image_outlined,
-                    color: Colors.white60, size: 40),
+                child: const Icon(Icons.broken_image_outlined, color: Colors.white60, size: 40),
               ),
               const SizedBox(height: 20),
               const Text(
                 'Halaman Tidak Ditemukan (404)',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               Text(
-                'Rute "${state.uri}" tidak tersedia atau sedang dalam pemeliharaan.',
+                'Rute "${state.uri}" tidak tersedia atau telah dipindahkan.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white54, fontSize: 14),
               ),
@@ -222,13 +198,10 @@ final routerProvider = Provider<GoRouter>((ref) {
               ElevatedButton.icon(
                 onPressed: () => context.go('/'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0B5C2E),
+                  backgroundColor: const Color(0xFF7C3AED),
                   foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 icon: const Icon(Icons.home_rounded, size: 18),
                 label: const Text('Kembali ke Beranda'),

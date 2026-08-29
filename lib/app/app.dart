@@ -3,16 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/app_theme.dart';
 import 'router.dart';
 
-/// Root widget aplikasi
-class YudisApp extends ConsumerWidget {
-  const YudisApp({super.key});
+/// Root widget aplikasi Sistem Peminjaman Lab & Ruang Kelas TIK PNL
+class SimLabApp extends ConsumerWidget {
+  const SimLabApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
-      title: 'Yudisium TIK PNL',
+      title: 'SIM-LAB & RUANG PBM TIK PNL',
       debugShowCheckedModeBanner: false,
 
       // Theme

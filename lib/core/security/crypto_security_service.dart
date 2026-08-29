@@ -3,15 +3,16 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:encrypt/encrypt.dart' as enc;
 
-/// Layanan Protokol Keamanan & Kriptografi Data (End-to-End & In-Transit)
-/// Digunakan untuk enkripsi payload data sensitif, validasi tanda tangan HMAC-SHA256,
-/// dan perlindungan terhadap Replay Attack serta kebocoran data.
+/// Layanan Protokol Keamanan, Kriptografi Data & Ledger Integritas (E2E & Blockchain Hash)
+/// Digunakan pada Sistem Manajemen Peminjaman Ruang & Lab PBM TIK PNL untuk:
+/// 1. Enkripsi E2E payload data peminjaman (AES-256-CBC)
+/// 2. Validasi tanda tangan digital HMAC-SHA256 (Anti-Tampering)
+/// 3. Hashing Blockchain Ledger untuk sertifikat izin ruang & bukti video kebersihan/AC
 class CryptoSecurityService {
   CryptoSecurityService._();
 
-  // Kunci enkripsi default aplikasi (32 bytes = 256 bits)
-  // Pada environment produksi, kunci ini dapat diinjeksikan via secure environment variable
-  static const String _defaultSecretKey = 'PNL_TIK_YUDISIUM_SECURE_KEY_2026';
+  // Kunci enkripsi default aplikasi Sistem Peminjaman Ruang TIK PNL (32 bytes = 256 bits)
+  static const String _defaultSecretKey = 'PNL_TIK_SIPENJOL_SECURE_KEY_2026';
   static const String _defaultHmacSecret = 'PNL_TIK_HMAC_INTEGRITY_SALT_9901';
 
   static final enc.Key _key = enc.Key.fromUtf8(_defaultSecretKey.padRight(32, '0').substring(0, 32));
@@ -29,7 +30,6 @@ class CryptoSecurityService {
       final combined = '${iv.base64}:${encrypted.base64}';
       return combined;
     } catch (e) {
-      // Fallback aman jika gagal enkripsi
       return jsonEncode(data);
     }
   }
@@ -38,7 +38,6 @@ class CryptoSecurityService {
   static Map<String, dynamic> decryptPayload(String payload) {
     try {
       if (!payload.contains(':')) {
-        // Plain JSON fallback
         return jsonDecode(payload) as Map<String, dynamic>;
       }
       final parts = payload.split(':');
@@ -56,7 +55,6 @@ class CryptoSecurityService {
   }
 
   /// Generate tanda tangan digital HMAC-SHA256 untuk memverifikasi integritas payload
-  /// dan mencegah manipulasi data (Anti-Tampering)
   static String generateSignature({
     required String payload,
     required int timestamp,
@@ -81,7 +79,6 @@ class CryptoSecurityService {
     int maxAgeSeconds = 300, // Toleransi maksimal 5 menit
   }) {
     final now = DateTime.now().millisecondsSinceEpoch;
-    // Cek replay attack berdasarkan timestamp window
     if ((now - timestamp).abs() > maxAgeSeconds * 1000) {
       return false;
     }
@@ -101,10 +98,34 @@ class CryptoSecurityService {
     return base64UrlEncode(values);
   }
 
-  /// Hash string menggunakan SHA-256 (misal untuk checksum token / password hash)
+  /// Hash string menggunakan SHA-256
   static String hashSha256(String input) {
     final bytes = utf8.encode(input);
     return sha256.convert(bytes).toString();
+  }
+
+  /// Generate Block Hash Ledger untuk bukti transaksi peminjaman ruang yang tidak dapat dimanipulasi
+  static String generateBookingLedgerHash({
+    required String bookingCode,
+    required String roomCode,
+    required String userNimNip,
+    required String timestamp,
+    String previousBlockHash = '00000000000000000000000000000000',
+  }) {
+    final rawData = '$previousBlockHash#$bookingCode#$roomCode#$userNimNip#$timestamp';
+    return hashSha256(rawData);
+  }
+
+  /// Generate Hash Integritas Bukti Video Serah Terima Ruang (AC Mati & Kebersihan)
+  static String generateVideoInspectionHash({
+    required String bookingCode,
+    required String videoName,
+    required bool isAcOff,
+    required bool isClean,
+    required String timestamp,
+  }) {
+    final rawData = 'VIDEO-INSPECTION#$bookingCode#$videoName#AC:${isAcOff ? "OFF" : "ON"}#CLEAN:${isClean ? "YES" : "NO"}#$timestamp';
+    return hashSha256(rawData);
   }
 
   /// Sanitasi data sensitif sebelum logging / debugging (masking)

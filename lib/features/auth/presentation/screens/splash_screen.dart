@@ -158,19 +158,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     return Column(
       children: [
         Text(
-          'Yudisium',
+          'SIM-LAB & RUANG PBM',
           style: Theme.of(context).textTheme.displayMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
+                fontSize: 24,
                 letterSpacing: -0.5,
               ),
         ),
         const SizedBox(height: AppTokens.spaceXXS),
         Text(
-          'Jurusan TIK',
+          'Sistem Manajemen Peminjaman Ruang & Lab PBM',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: AppTokens.accentGold,
                 fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
         ),
         const SizedBox(height: AppTokens.spaceXXS),

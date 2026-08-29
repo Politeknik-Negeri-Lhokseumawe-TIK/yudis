@@ -205,7 +205,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
             ),
             Text(
-              'Pendaftaran Mahasiswa Yudisium',
+              'Registrasi Akun SIM-LAB TIK PNL',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.white54,
                   ),

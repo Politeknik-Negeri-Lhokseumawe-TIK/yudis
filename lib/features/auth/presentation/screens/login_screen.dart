@@ -124,7 +124,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                           Text(
-                            'Sistem Yudisium TIK PNL — Protokol Perlindungan',
+                            'SIM-LAB & RUANG PBM TIK PNL — Protokol Perlindungan & Ledger Integritas',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 11,
@@ -155,14 +155,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Icons.lock_rounded,
                         'Enkripsi End-to-End (E2E)',
                         AppTokens.primaryGreenLight,
-                        'Seluruh data yang dikirim dan diterima dienkripsi menggunakan protokol AES-256-CBC dengan kunci 256-bit. Setiap sesi komunikasi menggunakan Initialization Vector (IV) yang unik dan acak untuk mencegah serangan replay.',
+                        'Seluruh data permohonan peminjaman ruangan yang dikirim dan diterima dienkripsi menggunakan protokol AES-256-CBC dengan kunci 256-bit. Setiap sesi komunikasi menggunakan Initialization Vector (IV) yang unik dan acak untuk mencegah replay attack.',
                       ),
                       const SizedBox(height: 16),
                       _securitySection(
                         Icons.verified_user_rounded,
-                        'Integritas Data — HMAC-SHA256',
+                        'Integritas Data & Ledger Hashing',
                         const Color(0xFF64B5F6),
-                        'Setiap payload data dilindungi dengan tanda tangan digital HMAC-SHA256. Tanda tangan ini memastikan bahwa data tidak dimodifikasi selama proses transmisi antara klien dan server.',
+                        'Setiap berkas transaksi peminjaman, surat izin, dan video bukti kebersihan/pemadaman AC dilindungi dengan cryptographic hashing HMAC-SHA256. Hal ini menjamin integritas bukti serah terima tidak dapat dimanipulasi.',
                       ),
                       const SizedBox(height: 16),
                       _securitySection(
@@ -190,7 +190,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Icons.policy_rounded,
                         'Kebijakan Privasi & Syarat Penggunaan',
                         Colors.white70,
-                        'Data pribadi mahasiswa (NIM, nama, email, no. HP) hanya digunakan untuk keperluan proses yudisium di lingkungan Politeknik Negeri Lhokseumawe. Data tidak dibagikan kepada pihak ketiga. Dengan menggunakan sistem ini, Anda menyetujui ketentuan penggunaan dan kebijakan privasi yang berlaku.',
+                        'Data identitas peminjam (NIM/NIP, nama, no. WhatsApp) dan rekaman video kondisi ruangan hanya digunakan untuk keperluan verifikasi operasional laboratorium dan ruang kelas di Jurusan TIK Politeknik Negeri Lhokseumawe.',
                       ),
                       const SizedBox(height: 20),
                       // Footer badge
@@ -459,7 +459,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Masukkan NIM atau Email Anda yang terdaftar pada sistem yudisium:',
+                              'Masukkan NIM atau Email Anda yang terdaftar pada sistem peminjaman lab:',
                               style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
                             ),
                             const SizedBox(height: 14),
@@ -873,7 +873,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         const SizedBox(height: AppTokens.spaceXXS),
         Text(
-          'Masuk ke Sistem Yudisium TIK PNL',
+          'Masuk ke SIM-LAB & RUANG PBM TIK PNL',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Colors.white60,
               ),

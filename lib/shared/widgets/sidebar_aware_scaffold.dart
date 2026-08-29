@@ -170,7 +170,7 @@ class SidebarWidget extends ConsumerWidget {
           ],
         ),
         content: const Text(
-          'Akun Anda saat ini sedang dalam proses verifikasi oleh Admin Jurusan TIK PNL.\n\nFormulir pendaftaran yudisium akan terbuka secara otomatis segera setelah akun Anda disetujui oleh tim verifikator.',
+          'Akun Anda saat ini sedang dalam proses verifikasi oleh Admin/Laboran Jurusan TIK PNL.\n\nLayanan pengajuan peminjaman laboratorium dan ruang kelas akan terbuka secara otomatis segera setelah akun Anda disetujui.',
           style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
         ),
         actions: [
@@ -303,7 +303,7 @@ class _SidebarHeader extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Yudisium',
+                      const Text('SIM-LAB',
                           style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w800,
@@ -715,15 +715,15 @@ class _NavItem {
 
 const _mahasiswaNavItems = [
   _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard', path: '/mahasiswa/dashboard'),
-  _NavItem(icon: Icons.assignment_outlined, label: 'Daftar Yudisium', path: '/mahasiswa/daftar'),
-  _NavItem(icon: Icons.track_changes_rounded, label: 'Status', path: '/mahasiswa/status'),
-  _NavItem(icon: Icons.notifications_outlined, label: 'Notifikasi', path: '/mahasiswa/notifikasi'),
+  _NavItem(icon: Icons.calendar_month_rounded, label: 'Roster Digital', path: '/roster-digital'),
+  _NavItem(icon: Icons.meeting_room_rounded, label: 'Ketersediaan Lab', path: '/ketersediaan-ruangan'),
+  _NavItem(icon: Icons.add_circle_outline_rounded, label: 'Pinjam Ruangan', path: '/form-peminjaman'),
+  _NavItem(icon: Icons.notifications_outlined, label: 'Notifikasi', path: '/notifikasi'),
 ];
 
 const _adminNavItems = [
-  _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard', path: '/admin/dashboard'),
-  _NavItem(icon: Icons.person_search_rounded, label: 'Verifikasi Akun', path: '/admin/akun/pending'),
-  _NavItem(icon: Icons.fact_check_rounded, label: 'Verifikasi Berkas', path: '/admin/yudisium'),
-  _NavItem(icon: Icons.date_range_rounded, label: 'Kelola Periode', path: '/admin/periode'),
-  _NavItem(icon: Icons.summarize_rounded, label: 'Rekap Peserta', path: '/admin/rekap'),
+  _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard Approval', path: '/admin/dashboard'),
+  _NavItem(icon: Icons.calendar_month_rounded, label: 'Roster Digital', path: '/roster-digital'),
+  _NavItem(icon: Icons.meeting_room_rounded, label: 'Matriks Okupansi', path: '/ketersediaan-ruangan'),
+  _NavItem(icon: Icons.notifications_outlined, label: 'Notifikasi', path: '/notifikasi'),
 ];

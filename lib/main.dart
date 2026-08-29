@@ -28,7 +28,7 @@ Future<void> main() async {
 
   runApp(
     const ProviderScope(
-      child: YudisApp(),
+      child: SimLabApp(),
     ),
   );
 }

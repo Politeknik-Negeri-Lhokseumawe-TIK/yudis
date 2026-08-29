@@ -15,6 +15,7 @@ import '../features/peminjaman_ruang/presentation/screens/detail_peminjaman_scre
 import '../features/admin_verifikasi/presentation/screens/admin_peminjaman_dashboard_screen.dart';
 import '../features/notifikasi/presentation/screens/notifikasi_screen.dart';
 import '../features/peminjaman_ruang/presentation/screens/counter_resepsionis_screen.dart';
+import '../features/peminjaman_ruang/presentation/screens/kiosk_mahasiswa_screen.dart';
 
 /// GoRouter config untuk Sistem Manajemen Peminjaman Lab & Ruang Kelas (SIM-LAB TIK PNL)
 final routerProvider = Provider<GoRouter>((ref) {
@@ -32,16 +33,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         return location == '/splash' ? null : '/splash';
       }
 
-      final publicPaths = ['/splash', '/login', '/register'];
+      final publicPaths = ['/splash', '/login', '/register', '/kiosk', '/resepsionis'];
       final isPublicPath = publicPaths.contains(location);
 
-      if (!isAuth) {
-        return isPublicPath ? null : '/login';
+      if (!isAuth && !isPublicPath) {
+        return '/login';
       }
 
-      if (isAuth && isPublicPath) {
-        if (authState.isAdmin) return '/admin/dashboard';
-        return '/mahasiswa/dashboard';
+      if (isAuth && (location == '/login' || location == '/splash')) {
+        if (authState.isAdmin) return '/resepsionis';
+        return '/kiosk';
       }
 
       return null;
@@ -166,12 +167,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // ── Komputer Meja Resepsionis / Front Desk Counter Ala Bank ──────
+      // ── Komputer 1: Meja Resepsionis / Front Desk Counter ──────────
       GoRoute(
         path: '/resepsionis',
         pageBuilder: (context, state) => _fadeTransition(
           key: state.pageKey,
           child: const CounterResepsionisScreen(),
+        ),
+      ),
+
+      // ── Komputer 2 & Komputer 3: Kiosk Mandiri Kelas Roster PBM ─────
+      GoRoute(
+        path: '/kiosk',
+        pageBuilder: (context, state) => _fadeTransition(
+          key: state.pageKey,
+          child: const KioskMahasiswaScreen(),
         ),
       ),
     ],

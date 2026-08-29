@@ -9,6 +9,7 @@ import '../../domain/models/receptionist_officer_model.dart';
 import '../../domain/models/room_model.dart';
 import '../../domain/models/roster_item_model.dart';
 import '../providers/booking_provider.dart';
+import '../providers/receptionist_provider.dart';
 import '../providers/roster_provider.dart';
 import '../widgets/slip_tanda_terima_dialog.dart';
 
@@ -22,14 +23,6 @@ class CounterResepsionisScreen extends ConsumerStatefulWidget {
 
 class _CounterResepsionisScreenState
     extends ConsumerState<CounterResepsionisScreen> {
-  // Daftar Petugas Terdaftar
-  late List<ReceptionistOfficerModel> _officers;
-  late ReceptionistOfficerModel _currentOfficer;
-
-  // Nomor Antrean Berjalan
-  int _currentQueueNumber = 1;
-  final String _currentQueuePrefix = 'A';
-
   // Search & Filter
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
@@ -41,9 +34,6 @@ class _CounterResepsionisScreenState
   @override
   void initState() {
     super.initState();
-    _officers = List.from(ReceptionistOfficerModel.defaultOfficers);
-    _currentOfficer = _officers.first;
-
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
@@ -101,32 +91,7 @@ class _CounterResepsionisScreenState
     return 1; // Default sesi pagi
   }
 
-  void _callNextQueue() {
-    setState(() {
-      _currentQueueNumber++;
-    });
-    final queueCode = '$_currentQueuePrefix-${_currentQueueNumber.toString().padLeft(2, "0")}';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFF0F172A),
-        duration: const Duration(seconds: 3),
-        content: Row(
-          children: [
-            const Icon(Icons.volume_up_rounded, color: AppTokens.accentGold),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                '🔔 Panggilan Antrean: Nomor $queueCode silahkan menuju ${_currentOfficer.counterName}',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showOfficerSwitchModal() {
+  void _showOfficerSwitchModal(OfficersState officersState) {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -142,20 +107,17 @@ class _CounterResepsionisScreenState
                 const Icon(Icons.badge_rounded, color: AppTokens.accentGold),
                 const SizedBox(width: 8),
                 const Text(
-                  'Petugas Meja Resepsionis (Nama & NIP)',
+                  'Dosen / Petugas Piket Jaga Resepsionis (Nama & NIP)',
                   style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
                 TextButton.icon(
                   style: TextButton.styleFrom(foregroundColor: AppTokens.primaryPurpleGlow),
                   icon: const Icon(Icons.person_add_rounded, size: 16),
-                  label: const Text('+ Tambah Petugas NIP', style: TextStyle(fontSize: 11)),
+                  label: const Text('+ Tambah Dosen Jaga Baru', style: TextStyle(fontSize: 11)),
                   onPressed: () {
                     _showAddEditOfficerDialog((newOfficer) {
-                      setState(() {
-                        _officers.add(newOfficer);
-                        _currentOfficer = newOfficer;
-                      });
+                      ref.read(officersProvider.notifier).addOfficer(newOfficer);
                       setDialogState(() {});
                     });
                   },
@@ -163,11 +125,11 @@ class _CounterResepsionisScreenState
               ],
             ),
             content: SizedBox(
-              width: 520,
+              width: 540,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: _officers.map((officer) {
-                  final isSelected = officer.id == _currentOfficer.id;
+                children: officersState.officers.map((officer) {
+                  final isSelected = officer.id == officersState.activeOfficer.id;
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     decoration: BoxDecoration(
@@ -215,7 +177,7 @@ class _CounterResepsionisScreenState
                           ? const Icon(Icons.check_circle_rounded, color: AppTokens.success, size: 20)
                           : null,
                       onTap: () {
-                        setState(() => _currentOfficer = officer);
+                        ref.read(officersProvider.notifier).setActiveOfficer(officer);
                         Navigator.of(ctx).pop();
                       },
                     ),
@@ -234,7 +196,7 @@ class _CounterResepsionisScreenState
     final nipCtrl = TextEditingController();
     String shiftName = 'Shift Pagi';
     String shiftHours = '07:30 - 13:00 WIB';
-    String roleTitle = 'Front Desk Officer';
+    String roleTitle = 'Dosen Piket / Pengawas PBM';
 
     showDialog(
       context: context,
@@ -244,40 +206,40 @@ class _CounterResepsionisScreenState
           borderRadius: BorderRadius.circular(14),
           side: BorderSide(color: AppTokens.glassBorderColor),
         ),
-        title: const Text('Input Data Petugas Resepsionis Baru', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+        title: const Text('Input Data Dosen / Petugas Piket Jaga Baru', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
         content: SizedBox(
-          width: 400,
+          width: 420,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameCtrl,
                 style: const TextStyle(color: Colors.white, fontSize: 12),
-                decoration: const InputDecoration(labelText: 'Nama Lengkap & Gelar Petugas', hintText: 'Contoh: Munawir, S.Kom.'),
+                decoration: const InputDecoration(labelText: 'Nama Lengkap & Gelar Dosen / Petugas', hintText: 'Contoh: Safriadi, S.T., M.Kom.'),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: nipCtrl,
                 style: const TextStyle(color: Colors.white, fontSize: 12),
-                decoration: const InputDecoration(labelText: 'NIP Petugas', hintText: 'Contoh: 19880412 201903 1 008'),
+                decoration: const InputDecoration(labelText: 'NIP Dosen / Petugas', hintText: 'Contoh: 19850214 201404 1 002'),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: shiftName,
                 dropdownColor: AppTokens.bgDarkSurface,
                 style: const TextStyle(color: Colors.white, fontSize: 12),
-                decoration: const InputDecoration(labelText: 'Pilihan Shift Tugas'),
+                decoration: const InputDecoration(labelText: 'Pilihan Shift Piket'),
                 items: const [
                   DropdownMenuItem(value: 'Shift Pagi', child: Text('Shift Pagi (07:30 - 13:00 WIB)')),
                   DropdownMenuItem(value: 'Shift Siang', child: Text('Shift Siang (13:00 - 18:00 WIB)')),
-                  DropdownMenuItem(value: 'Shift Lembur', child: Text('Shift Lembur Malam (18:00 - 22:00 WIB)')),
+                  DropdownMenuItem(value: 'Shift Penuh', child: Text('Shift Penuh Harian (07:30 - 18:00 WIB)')),
                 ],
                 onChanged: (val) {
                   if (val != null) {
                     shiftName = val;
                     if (val == 'Shift Pagi') shiftHours = '07:30 - 13:00 WIB';
                     if (val == 'Shift Siang') shiftHours = '13:00 - 18:00 WIB';
-                    if (val == 'Shift Lembur') shiftHours = '18:00 - 22:00 WIB';
+                    if (val == 'Shift Penuh') shiftHours = '07:30 - 18:00 WIB';
                   }
                 },
               ),
@@ -302,14 +264,14 @@ class _CounterResepsionisScreenState
                 shiftName: shiftName,
                 shiftHours: shiftHours,
                 counterName: 'MEJA PELAYANAN 1 (LOKET UTAMA)',
-                avatarInitials: initials.isNotEmpty ? initials : 'PT',
+                avatarInitials: initials.isNotEmpty ? initials : 'DS',
                 department: 'Jurusan Teknologi Informasi & Komputer',
                 contactPhone: '0812-0000-0000',
               );
               onSave(newOfficer);
               Navigator.pop(ctx);
             },
-            child: const Text('Simpan Petugas', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text('Simpan & Pasang Piket', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -318,6 +280,8 @@ class _CounterResepsionisScreenState
 
   @override
   Widget build(BuildContext context) {
+    final officersState = ref.watch(officersProvider);
+    final activeOfficer = officersState.activeOfficer;
     final allBookings = ref.watch(bookingListProvider);
     final allRooms = ref.watch(roomsProvider);
     final allSchedules = ref.watch(allRosterSchedulesProvider);
@@ -331,42 +295,43 @@ class _CounterResepsionisScreenState
       return b.bookingCode.toLowerCase().contains(q) ||
           b.userName.toLowerCase().contains(q) ||
           b.userNimNip.toLowerCase().contains(q) ||
-          b.roomCode.toLowerCase().contains(q);
+          b.roomCode.toLowerCase().contains(q) ||
+          b.purpose.toLowerCase().contains(q);
     }).toList();
 
-    final approvedBookings = allBookings.where((b) => b.status == BookingStatus.approved).toList();
+    final incomingRequests = allBookings.where((b) => b.status == BookingStatus.approved || b.status == BookingStatus.pending).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFF070B14),
       body: Column(
         children: [
-          // ── 1. TOP DIGITAL NAMEPLATE MEJA PELAYANAN ALA BANK ─────────
-          _buildOfficerNameplateHeader(),
+          // ── 1. TOP DIGITAL NAMEPLATE DOSEN PIKET RESEPSIONIS (PC 1) ──
+          _buildOfficerNameplateHeader(activeOfficer, officersState),
 
-          // ── 2. QUICK ACTION & QUEUE CALLER BAR ──────────────────────
-          _buildQueueAndSearchBar(),
+          // ── 2. QUICK SEARCH & KIOSK STATUS BAR ──────────────────────
+          _buildQuickSearchBar(),
 
           // ── 3. WORKSTATION 3-SPLIT PANEL ─────────────────────────────
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Panel Kiri: Antrean Peminjam & Serah Kunci
+                // Panel Kiri: Permohonan Kunci Kelas Masuk (dari PC 2 & 3)
                 Expanded(
                   flex: 3,
-                  child: _buildBorrowerQueuePanel(filteredBookings, approvedBookings),
+                  child: _buildBorrowerQueuePanel(filteredBookings, incomingRequests, activeOfficer),
                 ),
 
-                // Panel Tengah: Rak Gantungan Kunci Fisik 43 Ruangan + Status Roster Hari Ini
+                // Panel Tengah: Rak Gantungan Kunci Fisik 43 Ruangan + Live Roster
                 Expanded(
                   flex: 4,
-                  child: _buildPhysicalKeyRackPanel(allRooms, allBookings, allSchedules, todayDay, currentSession),
+                  child: _buildPhysicalKeyRackPanel(allRooms, allBookings, allSchedules, todayDay, currentSession, activeOfficer),
                 ),
 
-                // Panel Kanan: Pengembalian Kunci & Cek Video AC Mati
+                // Panel Kanan: Pengembalian Kunci & Cek Video Selesai Kuliah
                 Expanded(
                   flex: 3,
-                  child: _buildCheckoutReturnPanel(allBookings),
+                  child: _buildCheckoutReturnPanel(allBookings, activeOfficer),
                 ),
               ],
             ),
@@ -376,8 +341,8 @@ class _CounterResepsionisScreenState
     );
   }
 
-  // ── HEADER DIGITAL NAMEPLATE RESEPSIONIS ────────────────────────────
-  Widget _buildOfficerNameplateHeader() {
+  // ── HEADER DIGITAL NAMEPLATE DOSEN PIKET RESEPSIONIS ────────────────
+  Widget _buildOfficerNameplateHeader(ReceptionistOfficerModel activeOfficer, OfficersState officersState) {
     final timeStr = DateFormat('HH:mm:ss').format(_currentTime);
     final dateStr = DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(_currentTime);
 
@@ -419,18 +384,18 @@ class _CounterResepsionisScreenState
                     ),
                   ),
                   SizedBox(width: 8),
-                  Text('• FRONT OFFICE COUNTER', style: TextStyle(color: AppTokens.accentGold, fontSize: 11, fontWeight: FontWeight.bold)),
+                  Text('• KOMPUTER 1 (MEJA RESEPSIONIS)', style: TextStyle(color: AppTokens.accentGold, fontSize: 11, fontWeight: FontWeight.bold)),
                 ],
               ),
               Text(
-                'Meja Resepsionis & Pelayanan Peminjaman Laboratorium Terpadu',
+                'Pusat Serah-Terima Kunci Fisik Laboratorium & Ruang Kelas Perkuliahan Roster',
                 style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11),
               ),
             ],
           ),
           const Spacer(),
 
-          // ── Digital Nameplate Officer on Duty ──
+          // ── Digital Nameplate Dosen Piket Jaga ──
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
@@ -446,7 +411,7 @@ class _CounterResepsionisScreenState
                   radius: 18,
                   backgroundColor: AppTokens.accentGold,
                   child: Text(
-                    _currentOfficer.avatarInitials,
+                    activeOfficer.avatarInitials,
                     style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 12),
                   ),
                 ),
@@ -457,7 +422,7 @@ class _CounterResepsionisScreenState
                     Row(
                       children: [
                         Text(
-                          _currentOfficer.name,
+                          activeOfficer.name,
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w900,
@@ -471,12 +436,12 @@ class _CounterResepsionisScreenState
                             color: AppTokens.success.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text('ON DUTY', style: TextStyle(color: AppTokens.success, fontSize: 8.5, fontWeight: FontWeight.bold)),
+                          child: const Text('DOSEN PIKET AKTIF', style: TextStyle(color: AppTokens.success, fontSize: 8.5, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
                     Text(
-                      'NIP: ${_currentOfficer.nip} • ${_currentOfficer.shiftName} (${_currentOfficer.shiftHours})',
+                      'NIP: ${activeOfficer.nip} • ${activeOfficer.shiftName} (${activeOfficer.shiftHours})',
                       style: const TextStyle(color: AppTokens.accentGold, fontSize: 10, fontWeight: FontWeight.w600),
                     ),
                   ],
@@ -490,15 +455,15 @@ class _CounterResepsionisScreenState
                     minimumSize: Size.zero,
                   ),
                   icon: const Icon(Icons.swap_horiz_rounded, size: 14),
-                  label: const Text('Kelola / Ganti Shift', style: TextStyle(fontSize: 10)),
-                  onPressed: _showOfficerSwitchModal,
+                  label: const Text('Ganti / Tambah Dosen', style: TextStyle(fontSize: 10)),
+                  onPressed: () => _showOfficerSwitchModal(officersState),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 16),
 
-          // ── Live Digital Clock WIB ──
+          // Live Clock WIB
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
@@ -530,21 +495,24 @@ class _CounterResepsionisScreenState
           ),
           const SizedBox(width: 12),
 
-          // Tombol Kembali ke Admin Dashboard
-          IconButton(
-            tooltip: 'Ke Admin Dashboard',
-            icon: const Icon(Icons.dashboard_customize_rounded, color: Colors.white70),
-            onPressed: () => context.push('/admin/dashboard'),
+          // Tombol Buka Kiosk Mandiri (PC 2 & 3)
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0284C7),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+            icon: const Icon(Icons.touch_app_rounded, size: 16),
+            label: const Text('Buka Kiosk (PC 2/3)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            onPressed: () => context.push('/kiosk'),
           ),
         ],
       ),
     );
   }
 
-  // ── QUICK ACTION & QUEUE CALLER BAR ─────────────────────────────────
-  Widget _buildQueueAndSearchBar() {
-    final queueCode = '$_currentQueuePrefix-${_currentQueueNumber.toString().padLeft(2, "0")}';
-
+  // ── QUICK SEARCH BAR ────────────────────────────────────────────────
+  Widget _buildQuickSearchBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       decoration: const BoxDecoration(
@@ -553,43 +521,24 @@ class _CounterResepsionisScreenState
       ),
       child: Row(
         children: [
-          // Display Nomor Antrean Sekarang
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppTokens.primaryPurple.withValues(alpha: 0.2),
+              color: const Color(0xFF1E293B),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTokens.primaryPurpleGlow),
+              border: Border.all(color: const Color(0xFF334155)),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                const Icon(Icons.confirmation_number_rounded, color: AppTokens.primaryPurpleGlow, size: 18),
-                const SizedBox(width: 8),
-                const Text('ANTREAN AKTIF: ', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
-                Text(
-                  queueCode,
-                  style: const TextStyle(color: AppTokens.accentGold, fontSize: 16, fontWeight: FontWeight.w900, fontFamily: 'monospace'),
-                ),
+                Icon(Icons.desktop_windows_rounded, color: AppTokens.accentGold, size: 16),
+                SizedBox(width: 8),
+                Text('TERINTEGRASI DENGAN KIOSK MAHASISWA (PC 2 & PC 3)', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
-          const SizedBox(width: 10),
-
-          // Tombol Panggil Antrean Berikutnya
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTokens.primaryPurple,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            icon: const Icon(Icons.volume_up_rounded, size: 16),
-            label: const Text('Panggil Berikutnya', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-            onPressed: _callNextQueue,
-          ),
           const SizedBox(width: 16),
 
-          // Search Field Cepat NIM / NIP / Kode Booking
+          // Search Field Cepat Kelas / Ruang / Komti
           Expanded(
             child: SizedBox(
               height: 38,
@@ -597,7 +546,7 @@ class _CounterResepsionisScreenState
                 controller: _searchCtrl,
                 style: const TextStyle(color: Colors.white, fontSize: 12),
                 decoration: InputDecoration(
-                  hintText: 'Cari cepat NIM / NIP / Nama Pemohon / Kode Ruang (contoh: 220401012 atau TIK.101)...',
+                  hintText: 'Cari cepat Kelas (misal TRKJ 1A), Ruangan (TIK.101), atau Nama Komti/Mahasiswa...',
                   hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
                   prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54, size: 18),
                   suffixIcon: _searchCtrl.text.isNotEmpty
@@ -621,29 +570,16 @@ class _CounterResepsionisScreenState
               ),
             ),
           ),
-          const SizedBox(width: 12),
-
-          // Tombol Walk-in Fast Booking
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0284C7),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            icon: const Icon(Icons.add_task_rounded, size: 16),
-            label: const Text('+ Walk-in Peminjaman', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-            onPressed: () => context.push('/form-peminjaman'),
-          ),
         ],
       ),
     );
   }
 
-  // ── PANEL KIRI: ANTREAN PEMINJAM & SERAH TERIMA KUNCI ────────────────
+  // ── PANEL KIRI: PERMOHONAN KUNCI KELAS PBM MASUK ─────────────────────
   Widget _buildBorrowerQueuePanel(
     List<BookingModel> filteredBookings,
-    List<BookingModel> approvedBookings,
+    List<BookingModel> incomingRequests,
+    ReceptionistOfficerModel activeOfficer,
   ) {
     return Container(
       margin: const EdgeInsets.all(12),
@@ -658,10 +594,10 @@ class _CounterResepsionisScreenState
         children: [
           Row(
             children: [
-              const Icon(Icons.people_alt_rounded, color: AppTokens.accentGold, size: 18),
+              const Icon(Icons.assignment_rounded, color: AppTokens.accentGold, size: 18),
               const SizedBox(width: 8),
               const Text(
-                'Antrean Pengambilan Kunci',
+                'Permohonan Kunci Kelas Masuk',
                 style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w900),
               ),
               const Spacer(),
@@ -672,7 +608,7 @@ class _CounterResepsionisScreenState
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '${approvedBookings.length} Siap Ambil',
+                  '${incomingRequests.length} Siap Diserahkan',
                   style: const TextStyle(color: AppTokens.primaryPurpleGlow, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -682,12 +618,12 @@ class _CounterResepsionisScreenState
           const Divider(color: Colors.white12, height: 1),
           const SizedBox(height: 10),
 
-          // List Booking
+          // List Permohonan
           Expanded(
             child: filteredBookings.isEmpty
                 ? const Center(
                     child: Text(
-                      'Tidak ada permohonan antrean saat ini.',
+                      'Belum ada permohonan kunci kelas dari Kiosk PC 2/3.',
                       style: TextStyle(color: Colors.white38, fontSize: 12),
                     ),
                   )
@@ -695,7 +631,7 @@ class _CounterResepsionisScreenState
                     itemCount: filteredBookings.length,
                     itemBuilder: (ctx, idx) {
                       final b = filteredBookings[idx];
-                      final isReadyToPickup = b.status == BookingStatus.approved;
+                      final isReadyToPickup = b.status == BookingStatus.approved || b.status == BookingStatus.pending;
                       final isActive = b.status == BookingStatus.active;
 
                       return Container(
@@ -735,30 +671,37 @@ class _CounterResepsionisScreenState
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                Text(
-                                  b.statusLabel,
-                                  style: TextStyle(
-                                    color: isReadyToPickup ? AppTokens.primaryPurpleGlow : (isActive ? AppTokens.info : Colors.white60),
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.bold,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    color: isReadyToPickup ? AppTokens.success.withValues(alpha: 0.2) : (isActive ? AppTokens.info.withValues(alpha: 0.2) : Colors.white10),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    isReadyToPickup ? 'SIAP DISERAHKAN' : (isActive ? 'KUNCI DIBAWA' : 'SELESAI'),
+                                    style: TextStyle(
+                                      color: isReadyToPickup ? AppTokens.success : (isActive ? AppTokens.info : Colors.white60),
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'NIM: ${b.userNimNip} • ${b.sessionRangeLabel}',
+                              'Komti/Mahasiswa: NIM ${b.userNimNip} • HP: ${b.userPhone}',
                               style: const TextStyle(color: Colors.white54, fontSize: 10.5),
                             ),
                             Text(
-                              'Keperluan: ${b.purpose}',
-                              style: const TextStyle(color: Colors.white70, fontSize: 10.5),
+                              b.purpose,
+                              style: const TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w600),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 8),
 
-                            // Actions: Serah Kunci & Cetak Slip
+                            // Actions: Serah Kunci & Cetak Slip PBM
                             Row(
                               children: [
                                 if (isReadyToPickup)
@@ -771,18 +714,18 @@ class _CounterResepsionisScreenState
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                       ),
                                       icon: const Icon(Icons.key_rounded, size: 14),
-                                      label: const Text('Serahkan Kunci', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                      label: const Text('Serahkan Kunci ke Komti', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                                       onPressed: () async {
                                         await ref.read(bookingListProvider.notifier).updateStatus(
                                               b.id,
                                               BookingStatus.active,
-                                              approvedBy: '${_currentOfficer.name} (NIP: ${_currentOfficer.nip})',
+                                              approvedBy: '${activeOfficer.name} (NIP: ${activeOfficer.nip})',
                                             );
                                         if (!mounted) return;
                                         SlipTandaTerimaDialog.show(
                                           context,
                                           booking: b.copyWith(status: BookingStatus.active),
-                                          officer: _currentOfficer,
+                                          officer: activeOfficer,
                                         );
                                       },
                                     ),
@@ -795,12 +738,12 @@ class _CounterResepsionisScreenState
                                         padding: const EdgeInsets.symmetric(vertical: 4),
                                       ),
                                       icon: const Icon(Icons.receipt_long_rounded, size: 14, color: AppTokens.accentGold),
-                                      label: const Text('Slip Struk', style: TextStyle(color: Colors.white70, fontSize: 10.5)),
+                                      label: const Text('Cetak Slip PBM', style: TextStyle(color: Colors.white70, fontSize: 10.5)),
                                       onPressed: () {
                                         SlipTandaTerimaDialog.show(
                                           context,
                                           booking: b,
-                                          officer: _currentOfficer,
+                                          officer: activeOfficer,
                                         );
                                       },
                                     ),
@@ -819,13 +762,14 @@ class _CounterResepsionisScreenState
     );
   }
 
-  // ── PANEL TENGAH: RAK GANTUNGAN KUNCI FISIK 43 RUANGAN & LIVE ROSTER ──
+  // ── PANEL TENGAH: RAK GANTUNGAN KUNCI FISIK 43 RUANGAN ─────────────
   Widget _buildPhysicalKeyRackPanel(
     List<RoomModel> allRooms,
     List<BookingModel> allBookings,
     List<RosterItemModel> allSchedules,
     String todayDay,
     int currentSession,
+    ReceptionistOfficerModel activeOfficer,
   ) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12),
@@ -851,7 +795,7 @@ class _CounterResepsionisScreenState
               const SizedBox(width: 8),
               _buildKeyLegend('Kuliah PBM', const Color(0xFFA855F7)),
               const SizedBox(width: 8),
-              _buildKeyLegend('Dipinjam', AppTokens.error),
+              _buildKeyLegend('Dibawa Komti', AppTokens.error),
             ],
           ),
           const SizedBox(height: 10),
@@ -895,7 +839,7 @@ class _CounterResepsionisScreenState
                 if (isKeyBorrowed) {
                   cardBorderColor = AppTokens.error;
                   statusColor = AppTokens.error;
-                  statusText = 'Dipinjam: ${activeBooking.userName}';
+                  statusText = 'Dibawa: ${activeBooking.userName}';
                   keyIcon = Icons.key_rounded;
                 } else if (isClassActive) {
                   cardBorderColor = const Color(0xFFA855F7);
@@ -915,17 +859,15 @@ class _CounterResepsionisScreenState
                       SlipTandaTerimaDialog.show(
                         context,
                         booking: activeBooking,
-                        officer: _currentOfficer,
+                        officer: activeOfficer,
                       );
                     } else if (isClassActive) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: const Color(0xFF1E1B4B),
-                          content: Text('📚 Ruang ${room.id} sedang digunakan PBM: ${activeClass.courseName} - Dosen: ${activeClass.lecturerName}'),
+                          content: Text('📚 Ruang ${room.id} dijadwalkan PBM: ${activeClass.courseName} - Dosen: ${activeClass.lecturerName}'),
                         ),
                       );
-                    } else {
-                      context.push('/form-peminjaman?prefillRoom=${room.id}&prefillDay=$todayDay&prefillSession=$currentSession');
                     }
                   },
                   borderRadius: BorderRadius.circular(8),
@@ -991,8 +933,8 @@ class _CounterResepsionisScreenState
     );
   }
 
-  // ── PANEL KANAN: PENGEMBALIAN KUNCI & INSPEKSI VIDEO ────────────────
-  Widget _buildCheckoutReturnPanel(List<BookingModel> allBookings) {
+  // ── PANEL KANAN: PENGEMBALIAN KUNCI & INSPEKSI SELESAI KULIAH ────────
+  Widget _buildCheckoutReturnPanel(List<BookingModel> allBookings, ReceptionistOfficerModel activeOfficer) {
     final activeBookings = allBookings.where((b) => b.status == BookingStatus.active).toList();
 
     return Container(
@@ -1011,7 +953,7 @@ class _CounterResepsionisScreenState
               const Icon(Icons.assignment_turned_in_rounded, color: AppTokens.accentGold, size: 18),
               const SizedBox(width: 8),
               const Text(
-                'Pengembalian Kunci & Cek Video',
+                'Pengembalian Kunci Selesai Kuliah',
                 style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w900),
               ),
               const Spacer(),
@@ -1022,7 +964,7 @@ class _CounterResepsionisScreenState
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '${activeBookings.length} Kunci Beredar',
+                  '${activeBookings.length} Kunci di Kelas',
                   style: const TextStyle(color: AppTokens.info, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -1045,7 +987,6 @@ class _CounterResepsionisScreenState
                     itemCount: activeBookings.length,
                     itemBuilder: (ctx, idx) {
                       final b = activeBookings[idx];
-                      final hasVideo = b.checkoutVideoUrl != null && b.checkoutVideoUrl!.isNotEmpty;
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
@@ -1072,27 +1013,18 @@ class _CounterResepsionisScreenState
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: hasVideo ? AppTokens.success.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    hasVideo ? 'Video OK' : 'Belum Upload Video',
-                                    style: TextStyle(
-                                      color: hasVideo ? AppTokens.success : Colors.orange,
-                                      fontSize: 8.5,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
                               ],
                             ),
                             const SizedBox(height: 4),
                             Text(
+                              'Kuliah: ${b.purpose}',
+                              style: const TextStyle(color: Colors.white70, fontSize: 10.5),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
                               'Pukul: ${b.startTime} - ${b.endTime} WIB',
-                              style: const TextStyle(color: Colors.white54, fontSize: 10.5),
+                              style: const TextStyle(color: Colors.white54, fontSize: 10),
                             ),
                             const SizedBox(height: 8),
 
@@ -1107,18 +1039,18 @@ class _CounterResepsionisScreenState
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                 ),
                                 icon: const Icon(Icons.download_done_rounded, size: 14),
-                                label: const Text('Terima Kunci & Verifikasi Selesai', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+                                label: const Text('Terima Kunci & Simpan ke Rak', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
                                 onPressed: () async {
                                   await ref.read(bookingListProvider.notifier).updateStatus(
                                         b.id,
                                         BookingStatus.completed,
-                                        laboranReviewNotes: 'Kunci fisik diterima di meja resepsionis oleh ${_currentOfficer.name} (NIP: ${_currentOfficer.nip})',
+                                        laboranReviewNotes: 'Kunci fisik diterima di meja resepsionis oleh ${activeOfficer.name} (NIP: ${activeOfficer.nip})',
                                       );
                                   if (!mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       backgroundColor: AppTokens.success,
-                                      content: Text('✅ Kunci ${b.roomCode} berhasil diterima kembali ke rak kunci.'),
+                                      content: Text('✅ Kunci ${b.roomCode} berhasil diterima kembali ke rak kunci oleh ${activeOfficer.name}.'),
                                     ),
                                   );
                                 },

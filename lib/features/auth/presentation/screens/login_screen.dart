@@ -878,65 +878,91 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 14),
-        // ── Direct Shortcut: Mode Komputer Meja Resepsionis Ala Bank ──────
-        InkWell(
-          onTap: () => context.go('/resepsionis'),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppTokens.accentGold.withValues(alpha: 0.6),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTokens.accentGold.withValues(alpha: 0.2),
-                  blurRadius: 16,
-                  spreadRadius: 1,
+        const SizedBox(height: 16),
+        // ── Pilihan Cepat 3 Komputer ──────
+        Wrap(
+          spacing: 12,
+          runSpacing: 10,
+          alignment: WrapAlignment.center,
+          children: [
+            // Komputer 1: Meja Admin Resepsionis
+            InkWell(
+              onTap: () => context.go('/resepsionis'),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppTokens.accentGold.withValues(alpha: 0.6),
+                    width: 1.2,
+                  ),
                 ),
-              ],
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.storefront_rounded,
-                  color: AppTokens.accentGold,
-                  size: 20,
-                ),
-                SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '🏛️ Masuk Meja Resepsionis (Loket Ala Bank)',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                    Text(
-                      'Papan Nama Officer, Rak Kunci 43 Ruang & Cetak Slip',
-                      style: TextStyle(
-                        color: AppTokens.accentGold,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Icon(Icons.desktop_windows_rounded, color: AppTokens.accentGold, size: 18),
+                    SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '🖥️ KOMPUTER 1: RESEPSIONIS',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
+                        ),
+                        Text(
+                          'Dosen Piket Jaga & Serah Kunci',
+                          style: TextStyle(color: AppTokens.accentGold, fontSize: 9.5, fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                SizedBox(width: 8),
-                Icon(Icons.arrow_forward_ios_rounded, color: AppTokens.accentGold, size: 12),
-              ],
+              ),
             ),
-          ),
+
+            // Komputer 2 & 3: Kiosk Mandiri Kelas Mahasiswa
+            InkWell(
+              onTap: () => context.go('/kiosk'),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF0284C7), Color(0xFF0369A1)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.5),
+                    width: 1.2,
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.touch_app_rounded, color: Colors.white, size: 18),
+                    SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '📱 KOMPUTER 2 & 3: KIOSK KELAS',
+                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11),
+                        ),
+                        Text(
+                          'Mahasiswa/Komti Ambil Kunci Roster',
+                          style: TextStyle(color: Colors.white70, fontSize: 9.5, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         )
             .animate()
             .fadeIn(delay: 200.ms, duration: 600.ms)

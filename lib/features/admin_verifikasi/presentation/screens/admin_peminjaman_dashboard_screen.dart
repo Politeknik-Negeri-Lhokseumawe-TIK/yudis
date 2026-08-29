@@ -140,13 +140,76 @@ class _AdminPeminjamanDashboardScreenState
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Row(
+              child: Column(
                 children: [
-                  _buildAdminStatCard('Perlu Approval', '${pendingList.length}', AppTokens.accentGold, Icons.pending_actions_rounded),
-                  const SizedBox(width: 10),
-                  _buildAdminStatCard('Sedang Berjalan', '${approvedList.length}', AppTokens.primaryPurpleGlow, Icons.meeting_room_rounded),
-                  const SizedBox(width: 10),
-                  _buildAdminStatCard('Selesai & Valid', '${completedList.length}', AppTokens.success, Icons.verified_user_rounded),
+                  // Banner Mode Komputer Resepsionis (Loket Ala Bank)
+                  InkWell(
+                    onTap: () => context.push('/resepsionis'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1E1B4B), Color(0xFF0F172A)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTokens.accentGold.withValues(alpha: 0.6), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTokens.accentGold.withValues(alpha: 0.15),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppTokens.accentGold.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.storefront_rounded, color: AppTokens.accentGold, size: 24),
+                          ),
+                          const SizedBox(width: 14),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Mode 1 Komputer Resepsionis (Loket Ala Bank)',
+                                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5),
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text('LIVE', style: TextStyle(color: AppTokens.success, fontSize: 10, fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Papan Nama Officer On Duty, Sistem Antrean, Rak Gantungan Kunci Fisik 43 Ruang & Cetak Slip',
+                                  style: TextStyle(color: Colors.white60, fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.arrow_forward_ios_rounded, color: AppTokens.accentGold, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _buildAdminStatCard('Perlu Approval', '${pendingList.length}', AppTokens.accentGold, Icons.pending_actions_rounded),
+                      const SizedBox(width: 10),
+                      _buildAdminStatCard('Sedang Berjalan', '${approvedList.length}', AppTokens.primaryPurpleGlow, Icons.meeting_room_rounded),
+                      const SizedBox(width: 10),
+                      _buildAdminStatCard('Selesai & Valid', '${completedList.length}', AppTokens.success, Icons.verified_user_rounded),
+                    ],
+                  ),
                 ],
               ),
             ),

@@ -14,6 +14,7 @@ import '../features/peminjaman_ruang/presentation/screens/pengembalian_ruang_scr
 import '../features/peminjaman_ruang/presentation/screens/detail_peminjaman_screen.dart';
 import '../features/admin_verifikasi/presentation/screens/admin_peminjaman_dashboard_screen.dart';
 import '../features/notifikasi/presentation/screens/notifikasi_screen.dart';
+import '../features/peminjaman_ruang/presentation/screens/counter_resepsionis_screen.dart';
 
 /// GoRouter config untuk Sistem Manajemen Peminjaman Lab & Ruang Kelas (SIM-LAB TIK PNL)
 final routerProvider = Provider<GoRouter>((ref) {
@@ -162,6 +163,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => _fadeTransition(
           key: state.pageKey,
           child: const AdminPeminjamanDashboardScreen(),
+        ),
+      ),
+
+      // ── Komputer Meja Resepsionis / Front Desk Counter Ala Bank ──────
+      GoRoute(
+        path: '/resepsionis',
+        pageBuilder: (context, state) => _fadeTransition(
+          key: state.pageKey,
+          child: const CounterResepsionisScreen(),
         ),
       ),
     ],

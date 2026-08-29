@@ -715,6 +715,7 @@ class _NavItem {
 
 const _mahasiswaNavItems = [
   _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard', path: '/mahasiswa/dashboard'),
+  _NavItem(icon: Icons.storefront_rounded, label: 'Meja Resepsionis', path: '/resepsionis'),
   _NavItem(icon: Icons.calendar_month_rounded, label: 'Roster Digital', path: '/roster-digital'),
   _NavItem(icon: Icons.meeting_room_rounded, label: 'Ketersediaan Lab', path: '/ketersediaan-ruangan'),
   _NavItem(icon: Icons.add_circle_outline_rounded, label: 'Pinjam Ruangan', path: '/form-peminjaman'),
@@ -722,6 +723,7 @@ const _mahasiswaNavItems = [
 ];
 
 const _adminNavItems = [
+  _NavItem(icon: Icons.storefront_rounded, label: 'Meja Resepsionis (Loket)', path: '/resepsionis'),
   _NavItem(icon: Icons.dashboard_rounded, label: 'Dashboard Approval', path: '/admin/dashboard'),
   _NavItem(icon: Icons.calendar_month_rounded, label: 'Roster Digital', path: '/roster-digital'),
   _NavItem(icon: Icons.meeting_room_rounded, label: 'Matriks Okupansi', path: '/ketersediaan-ruangan'),

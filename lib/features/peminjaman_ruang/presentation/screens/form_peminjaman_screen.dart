@@ -60,10 +60,10 @@ class _FormPeminjamanScreenState extends ConsumerState<FormPeminjamanScreen> {
 
     // Prefill from current auth user if available
     final authState = ref.read(authProvider);
-    _nameCtrl.text = authState.user?.nama ?? 'Muhammad Fikri';
-    _nimNipCtrl.text = authState.user?.nim ?? '220401056';
-    _phoneCtrl.text = authState.user?.noHp ?? '082276543210';
-    _supervisorCtrl.text = 'Safriadi ST, M.Kom.';
+    _nameCtrl.text = authState.user?.nama ?? '';
+    _nimNipCtrl.text = authState.user?.nim ?? '';
+    _phoneCtrl.text = authState.user?.noHp ?? '';
+    _supervisorCtrl.text = '';
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _runConflictCheck();

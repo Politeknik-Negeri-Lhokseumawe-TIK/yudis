@@ -56,3 +56,17 @@ ON CONFLICT (id) DO UPDATE
 SET course_name = EXCLUDED.course_name,
     lecturer_name = EXCLUDED.lecturer_name,
     room_code = EXCLUDED.room_code;
+
+-- 3. SEED PETUGAS JAGA RESEPSIONIS / FRONT DESK COUNTER (NAMA & NIP)
+INSERT INTO public.receptionist_officers (id, name, nip, shift_name, shift_hours, role, is_active) VALUES
+('officer-01', 'Munawir, S.Kom.', '19880412 201903 1 008', 'Shift Pagi', '07:30 - 13:00 WIB', 'Front Desk Officer & Koordinator Lab', true),
+('officer-02', 'Riza Maulana, S.T.', '19910725 202203 1 005', 'Shift Siang', '13:00 - 18:00 WIB', 'Customer Service Specialist & Teknisi Cloud', true),
+('officer-03', 'Safriadi, S.T., M.Kom.', '19850214 201404 1 002', 'Shift Penuh', '08:00 - 16:00 WIB', 'Supervisor Operasional PBM & Laboran Senior', true)
+ON CONFLICT (id) DO UPDATE
+SET name = EXCLUDED.name,
+    nip = EXCLUDED.nip,
+    shift_name = EXCLUDED.shift_name,
+    shift_hours = EXCLUDED.shift_hours,
+    role = EXCLUDED.role,
+    is_active = EXCLUDED.is_active;
+

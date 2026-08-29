@@ -60,11 +60,31 @@ CREATE INDEX IF NOT EXISTS idx_roster_program ON public.roster_items(study_progr
 
 COMMENT ON TABLE public.roster_items IS 'Jadwal PBM Semester Gasal TA 2026/2027 — Jurusan TIK PNL';
 
--- 4. TABEL TRANSAKSI PEMINJAMAN RUANG
+-- 4. TABEL PETUGAS PENJAGA RESEPSIONIS (NAMA & NIP)
+CREATE TABLE IF NOT EXISTS public.receptionist_officers (
+  id              TEXT PRIMARY KEY,
+  name            TEXT NOT NULL,
+  nip             TEXT NOT NULL,
+  shift_name      TEXT NOT NULL,           -- 'Shift Pagi', 'Shift Siang'
+  shift_hours     TEXT NOT NULL,           -- '07:30 - 13:00 WIB'
+  role            TEXT NOT NULL DEFAULT 'Front Desk Officer',
+  is_active       BOOLEAN DEFAULT TRUE,
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+DROP TRIGGER IF EXISTS trg_officers_updated_at ON public.receptionist_officers;
+CREATE TRIGGER trg_officers_updated_at
+  BEFORE UPDATE ON public.receptionist_officers
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+COMMENT ON TABLE public.receptionist_officers IS 'Master data Petugas Resepsionis / Front Desk TIK PNL';
+
+-- 5. TABEL TRANSAKSI PEMINJAMAN RUANG (Mendukung Mahasiswa Tanpa Akun)
 CREATE TABLE IF NOT EXISTS public.bookings (
   id                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   booking_code                TEXT UNIQUE NOT NULL,
-  user_id                     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id                     UUID REFERENCES auth.users(id) ON DELETE SET NULL, -- Opsional / Nullable untuk Peminjam Tamu/Mahasiswa tanpa akun
   user_name                   TEXT NOT NULL,
   user_nim_nip                TEXT NOT NULL,
   user_phone                  TEXT NOT NULL,
@@ -212,46 +232,46 @@ BEGIN
 END;
 $$;
 
--- 7. ROW LEVEL SECURITY (RLS) POLICIES
+-- 8. ROW LEVEL SECURITY (RLS) POLICIES
 ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.roster_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.receptionist_officers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Policy Rooms
+-- Policy Rooms (Publik & Authenticated bisa lihat master ruang)
 DROP POLICY IF EXISTS "rooms_read_all" ON public.rooms;
-CREATE POLICY "rooms_read_all" ON public.rooms FOR SELECT TO authenticated USING (true);
+CREATE POLICY "rooms_read_all" ON public.rooms FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "rooms_manage_admin" ON public.rooms;
 CREATE POLICY "rooms_manage_admin" ON public.rooms FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'laboran')));
 
--- Policy Roster
+-- Policy Roster (Publik & Mahasiswa bisa lihat roster jadwal hari ini)
 DROP POLICY IF EXISTS "roster_read_all" ON public.roster_items;
-CREATE POLICY "roster_read_all" ON public.roster_items FOR SELECT TO authenticated USING (true);
+CREATE POLICY "roster_read_all" ON public.roster_items FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "roster_manage_admin" ON public.roster_items;
 CREATE POLICY "roster_manage_admin" ON public.roster_items FOR ALL TO authenticated
   USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'laboran')));
 
--- Policy Bookings
-DROP POLICY IF EXISTS "bookings_select_policy" ON public.bookings;
-CREATE POLICY "bookings_select_policy" ON public.bookings FOR SELECT TO authenticated
-  USING (
-    user_id = auth.uid() OR
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'laboran'))
-  );
+-- Policy Receptionist Officers (Publik bisa baca petugas jaga aktif, Admin bisa kelola)
+DROP POLICY IF EXISTS "officers_read_all" ON public.receptionist_officers;
+CREATE POLICY "officers_read_all" ON public.receptionist_officers FOR SELECT USING (true);
 
-DROP POLICY IF EXISTS "bookings_insert_own" ON public.bookings;
-CREATE POLICY "bookings_insert_own" ON public.bookings FOR INSERT TO authenticated
-  WITH CHECK (user_id = auth.uid());
+DROP POLICY IF EXISTS "officers_manage_admin" ON public.receptionist_officers;
+CREATE POLICY "officers_manage_admin" ON public.receptionist_officers FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'laboran')));
+
+-- Policy Bookings (Bisa dibaca semua & bisa di-insert mahasiswa tanpa akun)
+DROP POLICY IF EXISTS "bookings_select_policy" ON public.bookings;
+CREATE POLICY "bookings_select_policy" ON public.bookings FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "bookings_insert_policy" ON public.bookings;
+CREATE POLICY "bookings_insert_policy" ON public.bookings FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "bookings_update_policy" ON public.bookings;
-CREATE POLICY "bookings_update_policy" ON public.bookings FOR UPDATE TO authenticated
-  USING (
-    user_id = auth.uid() OR
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'laboran'))
-  );
+CREATE POLICY "bookings_update_policy" ON public.bookings FOR UPDATE USING (true);
 
 -- Policy Profiles
 DROP POLICY IF EXISTS "profiles_select_policy" ON public.profiles;

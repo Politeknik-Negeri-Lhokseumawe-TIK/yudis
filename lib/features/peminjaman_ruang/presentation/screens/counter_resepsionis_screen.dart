@@ -7,6 +7,7 @@ import '../../../../core/theme/app_tokens.dart';
 import '../../domain/models/booking_model.dart';
 import '../../domain/models/receptionist_officer_model.dart';
 import '../../domain/models/room_model.dart';
+import '../../domain/models/roster_item_model.dart';
 import '../providers/booking_provider.dart';
 import '../providers/roster_provider.dart';
 import '../widgets/slip_tanda_terima_dialog.dart';
@@ -21,9 +22,9 @@ class CounterResepsionisScreen extends ConsumerStatefulWidget {
 
 class _CounterResepsionisScreenState
     extends ConsumerState<CounterResepsionisScreen> {
-  // Petugas aktif saat ini
-  ReceptionistOfficerModel _currentOfficer =
-      ReceptionistOfficerModel.defaultOfficers[0];
+  // Daftar Petugas Terdaftar
+  late List<ReceptionistOfficerModel> _officers;
+  late ReceptionistOfficerModel _currentOfficer;
 
   // Nomor Antrean Berjalan
   int _currentQueueNumber = 1;
@@ -40,6 +41,9 @@ class _CounterResepsionisScreenState
   @override
   void initState() {
     super.initState();
+    _officers = List.from(ReceptionistOfficerModel.defaultOfficers);
+    _currentOfficer = _officers.first;
+
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
@@ -54,6 +58,47 @@ class _CounterResepsionisScreenState
     _clockTimer.cancel();
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  String _getTodayDayName() {
+    switch (_currentTime.weekday) {
+      case 1:
+        return 'Senin';
+      case 2:
+        return 'Selasa';
+      case 3:
+        return 'Rabu';
+      case 4:
+        return 'Kamis';
+      case 5:
+        return 'Jumat';
+      case 6:
+        return 'Sabtu';
+      case 7:
+        return 'Minggu';
+      default:
+        return 'Senin';
+    }
+  }
+
+  int _getCurrentSession() {
+    final hour = _currentTime.hour;
+    final minute = _currentTime.minute;
+    final totalMinutes = hour * 60 + minute;
+
+    if (totalMinutes >= 7 * 60 + 30 && totalMinutes < 8 * 60 + 20) return 1;
+    if (totalMinutes >= 8 * 60 + 20 && totalMinutes < 9 * 60 + 10) return 2;
+    if (totalMinutes >= 9 * 60 + 10 && totalMinutes < 10 * 60 + 0) return 3;
+    if (totalMinutes >= 10 * 60 + 15 && totalMinutes < 11 * 60 + 5) return 4;
+    if (totalMinutes >= 11 * 60 + 5 && totalMinutes < 11 * 60 + 55) return 5;
+    if (totalMinutes >= 11 * 60 + 55 && totalMinutes < 12 * 60 + 45) return 6;
+    if (totalMinutes >= 13 * 60 + 30 && totalMinutes < 14 * 60 + 20) return 7;
+    if (totalMinutes >= 14 * 60 + 20 && totalMinutes < 15 * 60 + 10) return 8;
+    if (totalMinutes >= 15 * 60 + 30 && totalMinutes < 16 * 60 + 20) return 9;
+    if (totalMinutes >= 16 * 60 + 20 && totalMinutes < 17 * 60 + 10) return 10;
+    if (totalMinutes >= 17 * 60 + 10 && totalMinutes < 18 * 60 + 0) return 11;
+
+    return 1; // Default sesi pagi
   }
 
   void _callNextQueue() {
@@ -84,64 +129,189 @@ class _CounterResepsionisScreenState
   void _showOfficerSwitchModal() {
     showDialog(
       context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (dialogCtx, setDialogState) {
+          return AlertDialog(
+            backgroundColor: AppTokens.bgDarkCard,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: AppTokens.glassBorderColor),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.badge_rounded, color: AppTokens.accentGold),
+                const SizedBox(width: 8),
+                const Text(
+                  'Petugas Meja Resepsionis (Nama & NIP)',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  style: TextButton.styleFrom(foregroundColor: AppTokens.primaryPurpleGlow),
+                  icon: const Icon(Icons.person_add_rounded, size: 16),
+                  label: const Text('+ Tambah Petugas NIP', style: TextStyle(fontSize: 11)),
+                  onPressed: () {
+                    _showAddEditOfficerDialog((newOfficer) {
+                      setState(() {
+                        _officers.add(newOfficer);
+                        _currentOfficer = newOfficer;
+                      });
+                      setDialogState(() {});
+                    });
+                  },
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 520,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: _officers.map((officer) {
+                  final isSelected = officer.id == _currentOfficer.id;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppTokens.primaryPurple.withValues(alpha: 0.25)
+                          : AppTokens.bgDarkSurface,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isSelected ? AppTokens.primaryPurpleGlow : Colors.white12,
+                      ),
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppTokens.accentGold.withValues(alpha: 0.2),
+                        child: Text(
+                          officer.avatarInitials,
+                          style: const TextStyle(color: AppTokens.accentGold, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      title: Row(
+                        children: [
+                          Text(
+                            officer.name,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: AppTokens.accentGold.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'NIP: ${officer.nip}',
+                              style: const TextStyle(color: AppTokens.accentGold, fontSize: 9.5, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                      subtitle: Text(
+                        '${officer.roleTitle} • ${officer.shiftName} (${officer.shiftHours})',
+                        style: const TextStyle(color: Colors.white54, fontSize: 10.5),
+                      ),
+                      trailing: isSelected
+                          ? const Icon(Icons.check_circle_rounded, color: AppTokens.success, size: 20)
+                          : null,
+                      onTap: () {
+                        setState(() => _currentOfficer = officer);
+                        Navigator.of(ctx).pop();
+                      },
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAddEditOfficerDialog(Function(ReceptionistOfficerModel) onSave) {
+    final nameCtrl = TextEditingController();
+    final nipCtrl = TextEditingController();
+    String shiftName = 'Shift Pagi';
+    String shiftHours = '07:30 - 13:00 WIB';
+    String roleTitle = 'Front Desk Officer';
+
+    showDialog(
+      context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTokens.bgDarkCard,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           side: BorderSide(color: AppTokens.glassBorderColor),
         ),
-        title: const Row(
-          children: [
-            Icon(Icons.badge_rounded, color: AppTokens.accentGold),
-            SizedBox(width: 8),
-            Text(
-              'Ganti Petugas Meja Pelayanan',
-              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: ReceptionistOfficerModel.defaultOfficers.map((officer) {
-            final isSelected = officer.id == _currentOfficer.id;
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppTokens.primaryPurple.withValues(alpha: 0.25)
-                    : AppTokens.bgDarkSurface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isSelected ? AppTokens.primaryPurpleGlow : Colors.white12,
-                ),
+        title: const Text('Input Data Petugas Resepsionis Baru', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                decoration: const InputDecoration(labelText: 'Nama Lengkap & Gelar Petugas', hintText: 'Contoh: Munawir, S.Kom.'),
               ),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppTokens.accentGold.withValues(alpha: 0.2),
-                  child: Text(
-                    officer.avatarInitials,
-                    style: const TextStyle(color: AppTokens.accentGold, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                title: Text(
-                  officer.name,
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-                subtitle: Text(
-                  '${officer.roleTitle} • ${officer.shiftName} (${officer.shiftHours})',
-                  style: const TextStyle(color: Colors.white54, fontSize: 10.5),
-                ),
-                trailing: isSelected
-                    ? const Icon(Icons.check_circle_rounded, color: AppTokens.success, size: 20)
-                    : null,
-                onTap: () {
-                  setState(() => _currentOfficer = officer);
-                  Navigator.of(ctx).pop();
+              const SizedBox(height: 12),
+              TextField(
+                controller: nipCtrl,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                decoration: const InputDecoration(labelText: 'NIP Petugas', hintText: 'Contoh: 19880412 201903 1 008'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: shiftName,
+                dropdownColor: AppTokens.bgDarkSurface,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                decoration: const InputDecoration(labelText: 'Pilihan Shift Tugas'),
+                items: const [
+                  DropdownMenuItem(value: 'Shift Pagi', child: Text('Shift Pagi (07:30 - 13:00 WIB)')),
+                  DropdownMenuItem(value: 'Shift Siang', child: Text('Shift Siang (13:00 - 18:00 WIB)')),
+                  DropdownMenuItem(value: 'Shift Lembur', child: Text('Shift Lembur Malam (18:00 - 22:00 WIB)')),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    shiftName = val;
+                    if (val == 'Shift Pagi') shiftHours = '07:30 - 13:00 WIB';
+                    if (val == 'Shift Siang') shiftHours = '13:00 - 18:00 WIB';
+                    if (val == 'Shift Lembur') shiftHours = '18:00 - 22:00 WIB';
+                  }
                 },
               ),
-            );
-          }).toList(),
+            ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTokens.primaryPurple),
+            onPressed: () {
+              if (nameCtrl.text.trim().isEmpty || nipCtrl.text.trim().isEmpty) return;
+              final initials = nameCtrl.text.trim().split(' ').map((s) => s.isNotEmpty ? s[0] : '').take(2).join();
+              final newOfficer = ReceptionistOfficerModel(
+                id: 'OFFICER-${DateTime.now().millisecondsSinceEpoch}',
+                name: nameCtrl.text.trim(),
+                nip: nipCtrl.text.trim(),
+                roleTitle: roleTitle,
+                shiftName: shiftName,
+                shiftHours: shiftHours,
+                counterName: 'MEJA PELAYANAN 1 (LOKET UTAMA)',
+                avatarInitials: initials.isNotEmpty ? initials : 'PT',
+                department: 'Jurusan Teknologi Informasi & Komputer',
+                contactPhone: '0812-0000-0000',
+              );
+              onSave(newOfficer);
+              Navigator.pop(ctx);
+            },
+            child: const Text('Simpan Petugas', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -150,6 +320,10 @@ class _CounterResepsionisScreenState
   Widget build(BuildContext context) {
     final allBookings = ref.watch(bookingListProvider);
     final allRooms = ref.watch(roomsProvider);
+    final allSchedules = ref.watch(allRosterSchedulesProvider);
+
+    final todayDay = _getTodayDayName();
+    final currentSession = _getCurrentSession();
 
     final filteredBookings = allBookings.where((b) {
       if (_searchQuery.isEmpty) return true;
@@ -183,10 +357,10 @@ class _CounterResepsionisScreenState
                   child: _buildBorrowerQueuePanel(filteredBookings, approvedBookings),
                 ),
 
-                // Panel Tengah: Rak Gantungan Kunci Fisik 43 Ruangan
+                // Panel Tengah: Rak Gantungan Kunci Fisik 43 Ruangan + Status Roster Hari Ini
                 Expanded(
                   flex: 4,
-                  child: _buildPhysicalKeyRackPanel(allRooms, allBookings),
+                  child: _buildPhysicalKeyRackPanel(allRooms, allBookings, allSchedules, todayDay, currentSession),
                 ),
 
                 // Panel Kanan: Pengembalian Kunci & Cek Video AC Mati
@@ -202,166 +376,133 @@ class _CounterResepsionisScreenState
     );
   }
 
-  // ── HEADER PAPAN NAMA DIGITAL (NAMEPLATE) ALA TELLER BANK ───────────
+  // ── HEADER DIGITAL NAMEPLATE RESEPSIONIS ────────────────────────────
   Widget _buildOfficerNameplateHeader() {
-    final timeFormatted = DateFormat('HH:mm:ss').format(_currentTime);
-    final dateFormatted = DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(_currentTime);
+    final timeStr = DateFormat('HH:mm:ss').format(_currentTime);
+    final dateStr = DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(_currentTime);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        border: const Border(bottom: BorderSide(color: Color(0xFF1E293B), width: 2)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
+      decoration: const BoxDecoration(
+        color: Color(0xFF0D1322),
+        border: Border(bottom: BorderSide(color: Color(0xFF1E293B), width: 1.5)),
       ),
       child: Row(
         children: [
-          // PNL Identity
+          // Logo & Title
           Container(
-            padding: const EdgeInsets.all(8),
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Center(
+              child: Icon(Icons.account_balance_rounded, color: Colors.white, size: 24),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Text(
+                    'SIM-LAB & RUANG PBM TIK PNL',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  Text('• FRONT OFFICE COUNTER', style: TextStyle(color: AppTokens.accentGold, fontSize: 11, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              Text(
+                'Meja Resepsionis & Pelayanan Peminjaman Laboratorium Terpadu',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11),
+              ),
+            ],
+          ),
+          const Spacer(),
+
+          // ── Digital Nameplate Officer on Duty ──
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
               ),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTokens.accentGold.withValues(alpha: 0.5)),
+              border: Border.all(color: AppTokens.accentGold, width: 1.2),
             ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
+            child: Row(
               children: [
-                Icon(Icons.account_balance_rounded, color: AppTokens.accentGold, size: 24),
-                SizedBox(width: 10),
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppTokens.accentGold,
+                  child: Text(
+                    _currentOfficer.avatarInitials,
+                    style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w900, fontSize: 12),
+                  ),
+                ),
+                const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'POLITEKNIK NEGERI LHOKSEUMAWE',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11.5,
-                        letterSpacing: 0.5,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          _currentOfficer.name,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: AppTokens.success.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text('ON DUTY', style: TextStyle(color: AppTokens.success, fontSize: 8.5, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
                     Text(
-                      'FRONT DESK RESEPSIONIS • JURUSAN TIK',
-                      style: TextStyle(
-                        color: AppTokens.accentGold,
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
+                      'NIP: ${_currentOfficer.nip} • ${_currentOfficer.shiftName} (${_currentOfficer.shiftHours})',
+                      style: const TextStyle(color: AppTokens.accentGold, fontSize: 10, fontWeight: FontWeight.w600),
                     ),
                   ],
+                ),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white38),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    minimumSize: Size.zero,
+                  ),
+                  icon: const Icon(Icons.swap_horiz_rounded, size: 14),
+                  label: const Text('Kelola / Ganti Shift', style: TextStyle(fontSize: 10)),
+                  onPressed: _showOfficerSwitchModal,
                 ),
               ],
             ),
           ),
           const SizedBox(width: 16),
 
-          // Papan Nama Petugas (Officer On Duty Nameplate)
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    const Color(0xFF1E293B),
-                    const Color(0xFF0F172A).withValues(alpha: 0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTokens.accentGold.withValues(alpha: 0.4), width: 1.5),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: AppTokens.accentGold,
-                    child: Text(
-                      _currentOfficer.avatarInitials,
-                      style: const TextStyle(
-                        color: Color(0xFF0F172A),
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppTokens.success.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: AppTokens.success),
-                              ),
-                              child: const Text(
-                                '● OFFICER ON DUTY',
-                                style: TextStyle(color: AppTokens.success, fontSize: 9, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _currentOfficer.counterName,
-                              style: const TextStyle(color: AppTokens.accentGold, fontSize: 10, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _currentOfficer.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.3,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          'NIP: ${_currentOfficer.nip} • ${_currentOfficer.roleTitle} • ${_currentOfficer.shiftName} (${_currentOfficer.shiftHours})',
-                          style: const TextStyle(color: Colors.white60, fontSize: 10),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Ganti Petugas Button
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: AppTokens.accentGold.withValues(alpha: 0.6)),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    icon: const Icon(Icons.swap_horiz_rounded, size: 14, color: AppTokens.accentGold),
-                    label: const Text('Ganti Shift', style: TextStyle(color: AppTokens.accentGold, fontSize: 11)),
-                    onPressed: _showOfficerSwitchModal,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-
-          // Live Clock WIB & Home Navigation
+          // ── Live Digital Clock WIB ──
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFF0B1120),
+              color: const Color(0xFF0F172A),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: const Color(0xFF334155)),
             ),
@@ -369,33 +510,29 @@ class _CounterResepsionisScreenState
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.access_time_filled_rounded, size: 14, color: AppTokens.accentGold),
+                    const Icon(Icons.access_time_filled_rounded, color: AppTokens.accentGold, size: 14),
                     const SizedBox(width: 6),
                     Text(
-                      '$timeFormatted WIB',
+                      '$timeStr WIB',
                       style: const TextStyle(
                         color: Colors.white,
                         fontFamily: 'monospace',
                         fontWeight: FontWeight.w900,
-                        fontSize: 15,
+                        fontSize: 14,
                       ),
                     ),
                   ],
                 ),
-                Text(
-                  dateFormatted,
-                  style: const TextStyle(color: Colors.white54, fontSize: 10),
-                ),
+                Text(dateStr, style: const TextStyle(color: Colors.white54, fontSize: 10)),
               ],
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
 
-          // Shortcut to Standard Dashboard
+          // Tombol Kembali ke Admin Dashboard
           IconButton(
-            tooltip: 'Ke Dashboard Utama',
+            tooltip: 'Ke Admin Dashboard',
             icon: const Icon(Icons.dashboard_customize_rounded, color: Colors.white70),
             onPressed: () => context.push('/admin/dashboard'),
           ),
@@ -460,7 +597,7 @@ class _CounterResepsionisScreenState
                 controller: _searchCtrl,
                 style: const TextStyle(color: Colors.white, fontSize: 12),
                 decoration: InputDecoration(
-                  hintText: 'Cari cepat NIM / NIP / Nama Pemohon / Kode Booking (contoh: 220401012 atau TIK.106)...',
+                  hintText: 'Cari cepat NIM / NIP / Nama Pemohon / Kode Ruang (contoh: 220401012 atau TIK.101)...',
                   hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
                   prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54, size: 18),
                   suffixIcon: _searchCtrl.text.isNotEmpty
@@ -545,11 +682,14 @@ class _CounterResepsionisScreenState
           const Divider(color: Colors.white12, height: 1),
           const SizedBox(height: 10),
 
-          // List Booking Approved
+          // List Booking
           Expanded(
             child: filteredBookings.isEmpty
                 ? const Center(
-                    child: Text('Tidak ada data peminjaman ditemukan.', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                    child: Text(
+                      'Tidak ada permohonan antrean saat ini.',
+                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
                   )
                 : ListView.builder(
                     itemCount: filteredBookings.length,
@@ -560,16 +700,15 @@ class _CounterResepsionisScreenState
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: isReadyToPickup
-                              ? AppTokens.primaryPurple.withValues(alpha: 0.15)
+                              ? const Color(0xFF1E1B4B).withValues(alpha: 0.6)
                               : const Color(0xFF1E293B),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: isReadyToPickup
-                                ? AppTokens.primaryPurpleGlow.withValues(alpha: 0.6)
-                                : Colors.white10,
+                            color: isReadyToPickup ? AppTokens.primaryPurpleGlow : Colors.white10,
+                            width: isReadyToPickup ? 1.5 : 1,
                           ),
                         ),
                         child: Column(
@@ -580,20 +719,19 @@ class _CounterResepsionisScreenState
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF0F172A),
+                                    color: AppTokens.accentGold.withValues(alpha: 0.2),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
                                     b.roomCode,
-                                    style: const TextStyle(color: AppTokens.accentGold, fontSize: 11, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(color: AppTokens.accentGold, fontWeight: FontWeight.w900, fontSize: 11),
                                   ),
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     b.userName,
-                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                                    maxLines: 1,
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -638,7 +776,7 @@ class _CounterResepsionisScreenState
                                         await ref.read(bookingListProvider.notifier).updateStatus(
                                               b.id,
                                               BookingStatus.active,
-                                              approvedBy: '${_currentOfficer.name} (Resepsionis)',
+                                              approvedBy: '${_currentOfficer.name} (NIP: ${_currentOfficer.nip})',
                                             );
                                         if (!mounted) return;
                                         SlipTandaTerimaDialog.show(
@@ -681,10 +819,13 @@ class _CounterResepsionisScreenState
     );
   }
 
-  // ── PANEL TENGAH: RAK GANTUNGAN KUNCI FISIK 43 RUANGAN ─────────────
+  // ── PANEL TENGAH: RAK GANTUNGAN KUNCI FISIK 43 RUANGAN & LIVE ROSTER ──
   Widget _buildPhysicalKeyRackPanel(
     List<RoomModel> allRooms,
     List<BookingModel> allBookings,
+    List<RosterItemModel> allSchedules,
+    String todayDay,
+    int currentSession,
   ) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 12),
@@ -701,14 +842,16 @@ class _CounterResepsionisScreenState
             children: [
               const Icon(Icons.vpn_key_rounded, color: AppTokens.accentGold, size: 18),
               const SizedBox(width: 8),
-              const Text(
-                'Papan Rak Kunci Fisik Laboratorium & Ruang PBM',
-                style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w900),
+              Text(
+                'Rak Kunci 43 Ruangan • Live $todayDay (Sesi $currentSession)',
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900),
               ),
               const Spacer(),
               _buildKeyLegend('Di Rak', AppTokens.success),
-              const SizedBox(width: 10),
-              _buildKeyLegend('Dibawa Peminjam', AppTokens.error),
+              const SizedBox(width: 8),
+              _buildKeyLegend('Kuliah PBM', const Color(0xFFA855F7)),
+              const SizedBox(width: 8),
+              _buildKeyLegend('Dipinjam', AppTokens.error),
             ],
           ),
           const SizedBox(height: 10),
@@ -722,41 +865,82 @@ class _CounterResepsionisScreenState
                 crossAxisCount: 4,
                 crossAxisSpacing: 8,
                 mainAxisSpacing: 8,
-                childAspectRatio: 1.25,
+                childAspectRatio: 1.2,
               ),
               itemCount: allRooms.length,
               itemBuilder: (ctx, idx) {
                 final room = allRooms[idx];
-                final isKeyBorrowed = allBookings.any(
-                  (b) => b.roomCode == room.id && b.status == BookingStatus.active,
-                );
-                final activeBooking = isKeyBorrowed
-                    ? allBookings.firstWhere((b) => b.roomCode == room.id && b.status == BookingStatus.active)
-                    : null;
+
+                // Cek apakah ada jadwal kuliah PBM hari ini pada sesi aktif
+                final activeClass = allSchedules.where((s) {
+                  return s.roomCode == room.id &&
+                      s.day.toLowerCase() == todayDay.toLowerCase() &&
+                      s.startSession <= currentSession &&
+                      s.endSession >= currentSession;
+                }).firstOrNull;
+
+                // Cek apakah ada peminjaman aktif saat ini
+                final activeBooking = allBookings.where((b) {
+                  return b.roomCode == room.id && b.status == BookingStatus.active;
+                }).firstOrNull;
+
+                final isClassActive = activeClass != null;
+                final isKeyBorrowed = activeBooking != null;
+
+                Color cardBorderColor;
+                Color statusColor;
+                String statusText;
+                IconData keyIcon;
+
+                if (isKeyBorrowed) {
+                  cardBorderColor = AppTokens.error;
+                  statusColor = AppTokens.error;
+                  statusText = 'Dipinjam: ${activeBooking.userName}';
+                  keyIcon = Icons.key_rounded;
+                } else if (isClassActive) {
+                  cardBorderColor = const Color(0xFFA855F7);
+                  statusColor = const Color(0xFFA855F7);
+                  statusText = 'Kuliah: ${activeClass.courseName} (${activeClass.className})';
+                  keyIcon = Icons.school_rounded;
+                } else {
+                  cardBorderColor = const Color(0xFF334155);
+                  statusColor = AppTokens.success;
+                  statusText = 'Tersedia di Rak';
+                  keyIcon = Icons.key_rounded;
+                }
 
                 return InkWell(
                   onTap: () {
-                    if (isKeyBorrowed && activeBooking != null) {
+                    if (isKeyBorrowed) {
                       SlipTandaTerimaDialog.show(
                         context,
                         booking: activeBooking,
                         officer: _currentOfficer,
                       );
+                    } else if (isClassActive) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor: const Color(0xFF1E1B4B),
+                          content: Text('📚 Ruang ${room.id} sedang digunakan PBM: ${activeClass.courseName} - Dosen: ${activeClass.lecturerName}'),
+                        ),
+                      );
                     } else {
-                      context.push('/form-peminjaman?prefillRoom=${room.id}');
+                      context.push('/form-peminjaman?prefillRoom=${room.id}&prefillDay=$todayDay&prefillSession=$currentSession');
                     }
                   },
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
                       color: isKeyBorrowed
-                          ? AppTokens.error.withValues(alpha: 0.15)
-                          : const Color(0xFF1E293B),
+                          ? AppTokens.error.withValues(alpha: 0.12)
+                          : isClassActive
+                              ? const Color(0xFFA855F7).withValues(alpha: 0.12)
+                              : const Color(0xFF1E293B),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: isKeyBorrowed ? AppTokens.error : const Color(0xFF334155),
-                        width: isKeyBorrowed ? 1.5 : 1,
+                        color: cardBorderColor,
+                        width: isKeyBorrowed || isClassActive ? 1.5 : 1,
                       ),
                     ),
                     child: Column(
@@ -765,37 +949,31 @@ class _CounterResepsionisScreenState
                       children: [
                         Row(
                           children: [
-                            Icon(
-                              Icons.key_rounded,
-                              size: 14,
-                              color: isKeyBorrowed ? AppTokens.error : AppTokens.success,
-                            ),
+                            Icon(keyIcon, size: 13, color: statusColor),
                             const SizedBox(width: 4),
                             Text(
                               room.id,
                               style: TextStyle(
-                                color: isKeyBorrowed ? AppTokens.error : Colors.white,
+                                color: isKeyBorrowed ? AppTokens.error : (isClassActive ? const Color(0xFFA855F7) : Colors.white),
                                 fontWeight: FontWeight.w900,
-                                fontSize: 11.5,
+                                fontSize: 11,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 2),
                         Text(
                           room.name,
-                          style: const TextStyle(color: Colors.white70, fontSize: 9),
+                          style: const TextStyle(color: Colors.white70, fontSize: 8.5),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          isKeyBorrowed
-                              ? 'Oleh: ${activeBooking?.userName ?? "Peminjam"}'
-                              : 'Tersedia di Meja',
+                          statusText,
                           style: TextStyle(
-                            color: isKeyBorrowed ? AppTokens.accentGold : AppTokens.success,
-                            fontSize: 8.5,
+                            color: statusColor,
+                            fontSize: 8,
                             fontWeight: FontWeight.bold,
                           ),
                           maxLines: 1,
@@ -813,26 +991,9 @@ class _CounterResepsionisScreenState
     );
   }
 
-  Widget _buildKeyLegend(String label, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 10)),
-      ],
-    );
-  }
-
-  // ── PANEL KANAN: PENGEMBALIAN KUNCI & CEK VIDEO AC MATI ────────────
+  // ── PANEL KANAN: PENGEMBALIAN KUNCI & INSPEKSI VIDEO ────────────────
   Widget _buildCheckoutReturnPanel(List<BookingModel> allBookings) {
-    final returnPendingList = allBookings
-        .where((b) => b.status == BookingStatus.active || (b.isCheckoutDone && b.status != BookingStatus.completed))
-        .toList();
+    final activeBookings = allBookings.where((b) => b.status == BookingStatus.active).toList();
 
     return Container(
       margin: const EdgeInsets.all(12),
@@ -847,10 +1008,10 @@ class _CounterResepsionisScreenState
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check_rounded, color: AppTokens.info, size: 18),
+              const Icon(Icons.assignment_turned_in_rounded, color: AppTokens.accentGold, size: 18),
               const SizedBox(width: 8),
               const Text(
-                'Pengembalian & Cek Video AC',
+                'Pengembalian Kunci & Cek Video',
                 style: TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w900),
               ),
               const Spacer(),
@@ -861,7 +1022,7 @@ class _CounterResepsionisScreenState
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  '${returnPendingList.length} Aktif',
+                  '${activeBookings.length} Kunci Beredar',
                   style: const TextStyle(color: AppTokens.info, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -871,26 +1032,28 @@ class _CounterResepsionisScreenState
           const Divider(color: Colors.white12, height: 1),
           const SizedBox(height: 10),
 
+          // List Kunci yang Sedang Dipinjam
           Expanded(
-            child: returnPendingList.isEmpty
+            child: activeBookings.isEmpty
                 ? const Center(
-                    child: Text('Belum ada pengembalian kunci yang aktif.', style: TextStyle(color: Colors.white38, fontSize: 11)),
+                    child: Text(
+                      'Semua kunci 43 ruangan berada di rak.',
+                      style: TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
                   )
                 : ListView.builder(
-                    itemCount: returnPendingList.length,
+                    itemCount: activeBookings.length,
                     itemBuilder: (ctx, idx) {
-                      final b = returnPendingList[idx];
-                      final hasVideo = b.isCheckoutDone;
+                      final b = activeBookings[idx];
+                      final hasVideo = b.checkoutVideoUrl != null && b.checkoutVideoUrl!.isNotEmpty;
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E293B),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: hasVideo ? AppTokens.success.withValues(alpha: 0.6) : Colors.white12,
-                          ),
+                          border: Border.all(color: const Color(0xFF334155)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -899,109 +1062,67 @@ class _CounterResepsionisScreenState
                               children: [
                                 Text(
                                   b.roomCode,
-                                  style: const TextStyle(color: AppTokens.accentGold, fontWeight: FontWeight.bold, fontSize: 12),
+                                  style: const TextStyle(color: AppTokens.accentGold, fontWeight: FontWeight.w900, fontSize: 12),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     b.userName,
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                                    maxLines: 1,
+                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11.5),
                                     overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: hasVideo ? AppTokens.success.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    hasVideo ? 'Video OK' : 'Belum Upload Video',
+                                    style: TextStyle(
+                                      color: hasVideo ? AppTokens.success : Colors.orange,
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Sesi: ${b.sessionRangeLabel} (${b.day})',
-                              style: const TextStyle(color: Colors.white60, fontSize: 10.5),
-                            ),
-                            const SizedBox(height: 6),
-
-                            // Video Status Badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: hasVideo
-                                    ? AppTokens.success.withValues(alpha: 0.15)
-                                    : AppTokens.accentGold.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    hasVideo ? Icons.videocam_rounded : Icons.pending_actions_rounded,
-                                    size: 13,
-                                    color: hasVideo ? AppTokens.success : AppTokens.accentGold,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      hasVideo
-                                          ? 'Bukti Video AC Mati: TERSEDIA'
-                                          : 'Menunggu Upload Video Mahasiswa',
-                                      style: TextStyle(
-                                        color: hasVideo ? AppTokens.success : AppTokens.accentGold,
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                              'Pukul: ${b.startTime} - ${b.endTime} WIB',
+                              style: const TextStyle(color: Colors.white54, fontSize: 10.5),
                             ),
                             const SizedBox(height: 8),
 
-                            // Action: Cek Video & Terima Kunci
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF0F172A),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 6),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(6),
-                                        side: const BorderSide(color: Color(0xFF334155)),
-                                      ),
-                                    ),
-                                    icon: const Icon(Icons.play_circle_fill_rounded, size: 14, color: AppTokens.accentGold),
-                                    label: const Text('Detail & Video', style: TextStyle(fontSize: 10.5)),
-                                    onPressed: () {
-                                      context.push('/detail-peminjaman?bookingId=${b.id}');
-                                    },
-                                  ),
+                            // Tombol Terima Kunci
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF0D9488),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppTokens.success,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 6),
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                                    ),
-                                    icon: const Icon(Icons.check_circle_rounded, size: 14),
-                                    label: const Text('Terima Kunci', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
-                                    onPressed: () async {
-                                      await ref.read(bookingListProvider.notifier).updateStatus(
-                                            b.id,
-                                            BookingStatus.completed,
-                                            laboranReviewNotes: 'Kunci fisik diterima di meja resepsionis oleh ${_currentOfficer.name}',
-                                          );
-                                      if (!mounted) return;
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          backgroundColor: AppTokens.success,
-                                          content: Text('✅ Kunci ${b.roomCode} berhasil diterima kembali ke rak kunci.'),
-                                        ),
+                                icon: const Icon(Icons.download_done_rounded, size: 14),
+                                label: const Text('Terima Kunci & Verifikasi Selesai', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold)),
+                                onPressed: () async {
+                                  await ref.read(bookingListProvider.notifier).updateStatus(
+                                        b.id,
+                                        BookingStatus.completed,
+                                        laboranReviewNotes: 'Kunci fisik diterima di meja resepsionis oleh ${_currentOfficer.name} (NIP: ${_currentOfficer.nip})',
                                       );
-                                    },
-                                  ),
-                                ),
-                              ],
+                                  if (!mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      backgroundColor: AppTokens.success,
+                                      content: Text('✅ Kunci ${b.roomCode} berhasil diterima kembali ke rak kunci.'),
+                                    ),
+                                  );
+                                },
+                              ),
                             ),
                           ],
                         ),
@@ -1011,6 +1132,21 @@ class _CounterResepsionisScreenState
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildKeyLegend(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 9.5)),
+      ],
     );
   }
 }

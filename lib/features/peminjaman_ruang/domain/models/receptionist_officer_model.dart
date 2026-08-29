@@ -25,6 +25,63 @@ class ReceptionistOfficerModel {
     required this.contactPhone,
   });
 
+  ReceptionistOfficerModel copyWith({
+    String? id,
+    String? name,
+    String? nip,
+    String? roleTitle,
+    String? shiftName,
+    String? shiftHours,
+    String? counterName,
+    String? avatarInitials,
+    String? department,
+    bool? isOnDuty,
+    String? contactPhone,
+  }) {
+    return ReceptionistOfficerModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      nip: nip ?? this.nip,
+      roleTitle: roleTitle ?? this.roleTitle,
+      shiftName: shiftName ?? this.shiftName,
+      shiftHours: shiftHours ?? this.shiftHours,
+      counterName: counterName ?? this.counterName,
+      avatarInitials: avatarInitials ?? this.avatarInitials,
+      department: department ?? this.department,
+      isOnDuty: isOnDuty ?? this.isOnDuty,
+      contactPhone: contactPhone ?? this.contactPhone,
+    );
+  }
+
+  factory ReceptionistOfficerModel.fromRow(Map<String, dynamic> row) {
+    final name = (row['name'] ?? 'Petugas Resepsionis').toString();
+    final initials = name.split(' ').map((s) => s.isNotEmpty ? s[0] : '').take(2).join();
+
+    return ReceptionistOfficerModel(
+      id: (row['id'] ?? 'OFFICER-${DateTime.now().millisecondsSinceEpoch}').toString(),
+      name: name,
+      nip: (row['nip'] ?? '-').toString(),
+      roleTitle: (row['role'] ?? row['role_title'] ?? 'Front Desk Officer').toString(),
+      shiftName: (row['shift_name'] ?? 'Shift Pagi').toString(),
+      shiftHours: (row['shift_hours'] ?? '07:30 - 13:00 WIB').toString(),
+      counterName: (row['counter_name'] ?? 'MEJA PELAYANAN 1 (LOKET UTAMA)').toString(),
+      avatarInitials: initials.isNotEmpty ? initials : 'MW',
+      department: (row['department'] ?? 'Jurusan Teknologi Informasi & Komputer').toString(),
+      isOnDuty: row['is_active'] == true,
+      contactPhone: (row['contact_phone'] ?? '0812-6901-4455').toString(),
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'name': name,
+        'nip': nip,
+        'role': roleTitle,
+        'shift_name': shiftName,
+        'shift_hours': shiftHours,
+        'is_active': isOnDuty,
+      };
+
   static const List<ReceptionistOfficerModel> defaultOfficers = [
     ReceptionistOfficerModel(
       id: 'OFFICER-01',

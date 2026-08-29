@@ -20,6 +20,7 @@ class KioskMahasiswaScreen extends ConsumerStatefulWidget {
 
 class _KioskMahasiswaScreenState extends ConsumerState<KioskMahasiswaScreen> {
   String _selectedProdi = 'TRKJ'; // 'TRKJ', 'TRMM', 'TI'
+  late String _selectedDay;
   String _searchClassQuery = '';
 
   // Timer Jam & Auto Reset
@@ -29,6 +30,9 @@ class _KioskMahasiswaScreenState extends ConsumerState<KioskMahasiswaScreen> {
   @override
   void initState() {
     super.initState();
+    final dayName = _getTodayDayName();
+    _selectedDay = (dayName == 'Sabtu' || dayName == 'Minggu') ? 'Senin' : dayName;
+
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {
@@ -443,14 +447,13 @@ class _KioskMahasiswaScreenState extends ConsumerState<KioskMahasiswaScreen> {
     final allSchedules = ref.watch(allRosterSchedulesProvider);
     final allBookings = ref.watch(bookingListProvider);
 
-    final todayDay = _getTodayDayName();
     final timeStr = DateFormat('HH:mm:ss').format(_currentTime);
     final dateStr = DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(_currentTime);
 
     // Filter jadwal berdasarkan Prodi, Hari ini, dan Search
     final todaySchedules = allSchedules.where((s) {
       if (s.studyProgram.toUpperCase() != _selectedProdi.toUpperCase()) return false;
-      if (s.day.toLowerCase() != todayDay.toLowerCase()) return false;
+      if (s.day.toLowerCase() != _selectedDay.toLowerCase()) return false;
       if (_searchClassQuery.isNotEmpty) {
         final q = _searchClassQuery.toLowerCase();
         return s.className.toLowerCase().contains(q) ||
@@ -467,8 +470,8 @@ class _KioskMahasiswaScreenState extends ConsumerState<KioskMahasiswaScreen> {
           // ── 1. KIOSK TOP BAR WITH LIVE OFFICER INTEGRATION ──────────
           _buildKioskHeader(timeStr, dateStr, activeOfficer),
 
-          // ── 2. PRODI & CLASS SELECTOR BAR ───────────────────────────
-          _buildProdiSelectorBar(todayDay),
+          // ── 2. PRODI & DAY SELECTOR BAR ─────────────────────────────
+          _buildProdiSelectorBar(),
 
           // ── 3. ROSTER CLASS GRID (TODAY SCHEDULES) ──────────────────
           Expanded(
@@ -480,12 +483,12 @@ class _KioskMahasiswaScreenState extends ConsumerState<KioskMahasiswaScreen> {
                         Icon(Icons.event_busy_rounded, color: Colors.white.withValues(alpha: 0.2), size: 64),
                         const SizedBox(height: 14),
                         Text(
-                          'Tidak ada jadwal perkuliahan $todayDay untuk Prodi $_selectedProdi',
+                          'Tidak ada jadwal perkuliahan $_selectedDay untuk Prodi $_selectedProdi',
                           style: const TextStyle(color: Colors.white60, fontSize: 14, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 6),
                         const Text(
-                          'Pilih Program Studi lain di atas untuk melihat jadwal perkuliahan hari ini.',
+                          'Pilih Hari atau Program Studi lain di atas untuk melihat jadwal perkuliahan.',
                           style: TextStyle(color: Colors.white38, fontSize: 11),
                         ),
                       ],
@@ -620,38 +623,75 @@ class _KioskMahasiswaScreenState extends ConsumerState<KioskMahasiswaScreen> {
     );
   }
 
-  // ── SELECTOR PRODI & KELAS SEARCH ────────────────────────────────────
-  Widget _buildProdiSelectorBar(String todayDay) {
+  // ── SELECTOR PRODI & HARI & KELAS SEARCH ─────────────────────────────
+  Widget _buildProdiSelectorBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
       decoration: const BoxDecoration(
         color: Color(0xFF090D1A),
         border: Border(bottom: BorderSide(color: Color(0xFF1E293B))),
       ),
       child: Row(
         children: [
+          // Prodi Selector
           const Text(
-            'PILIH PROGRAM STUDI: ',
-            style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
+            'PRODI: ',
+            style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           _prodiButton('TRKJ', 'Teknologi Rekayasa Komputer Jaringan'),
-          const SizedBox(width: 10),
+          const SizedBox(width: 6),
           _prodiButton('TRMM', 'Teknologi Rekayasa Multimedia'),
-          const SizedBox(width: 10),
+          const SizedBox(width: 6),
           _prodiButton('TI', 'Teknik Informatika'),
+          const SizedBox(width: 20),
+
+          // Day Selector
+          const Text(
+            'HARI: ',
+            style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 8),
+          ...['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'].map((day) {
+            final isDaySelected = _selectedDay.toLowerCase() == day.toLowerCase();
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: InkWell(
+                onTap: () => setState(() => _selectedDay = day),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isDaySelected ? const Color(0xFF0284C7) : const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: isDaySelected ? Colors.white70 : Colors.white12,
+                    ),
+                  ),
+                  child: Text(
+                    day,
+                    style: TextStyle(
+                      color: isDaySelected ? Colors.white : Colors.white60,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
           const Spacer(),
 
           // Search Kelas
           SizedBox(
-            width: 280,
-            height: 38,
+            width: 240,
+            height: 36,
             child: TextField(
               style: const TextStyle(color: Colors.white, fontSize: 12),
               decoration: InputDecoration(
-                hintText: 'Cari Kelas (contoh: TRKJ 1A, TDC-202)...',
+                hintText: 'Cari Kelas (contoh: TRKJ 1A)...',
                 hintStyle: const TextStyle(color: Colors.white38, fontSize: 11),
-                prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54, size: 18),
+                prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54, size: 16),
                 filled: true,
                 fillColor: const Color(0xFF1E293B),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),

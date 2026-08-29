@@ -390,6 +390,7 @@ class _RosterDigitalScreenState extends ConsumerState<RosterDigitalScreen>
     Color prodiColor = AppTokens.primaryPurple;
     if (item.studyProgram == 'TRMM') prodiColor = AppTokens.prodiTRMM;
     if (item.studyProgram == 'TI') prodiColor = AppTokens.prodiTI;
+    if (item.studyProgram == 'TRPL') prodiColor = AppTokens.prodiTRPL;
 
     return CyberCard(
       margin: const EdgeInsets.only(bottom: 12),

@@ -40,6 +40,7 @@ class AppConstants {
     'TRMM',
     'TRKJ',
     'TI',
+    'TRPL',
     'Kelas Kerjasama',
   ];
 
@@ -60,6 +61,8 @@ class AppConstants {
     'TI 2A', 'TI 2B', 'TI 2C', 'TI 2D', 'TI 2E',
     'TI 3A', 'TI 3B', 'TI 3C', 'TI 3D', 'TI 3E',
     'TI 4A', 'TI 4B', 'TI 4C', 'TI 4D', 'TI 4E',
+    // TRPL
+    'TRPL 1A',
     'Kelas Sawit',
   ];
 

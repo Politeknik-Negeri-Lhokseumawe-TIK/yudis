@@ -34,10 +34,11 @@ abstract class AppTokens {
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF38BDF8);
 
-  // ── Prodi Colors ──────────────────────────────────────────────
-  static const Color prodiTRKJ = Color(0xFFA855F7);   // Ungu — Teknologi Rekayasa Komputer Jaringan
-  static const Color prodiTRMM = Color(0xFFEC4899);   // Pink Magenta — Teknologi Rekayasa Multimedia
-  static const Color prodiTI = Color(0xFF38BDF8);     // Cyan Sky — Teknik Informatika
+  // ── Prodi Colors ─────────────────────────────────────────────────────────────
+  static const Color prodiTRKJ = Color(0xFFA855F7);   // Ungu ─ Teknologi Rekayasa Komputer Jaringan
+  static const Color prodiTRMM = Color(0xFFEC4899);   // Pink Magenta ─ Teknologi Rekayasa Multimedia
+  static const Color prodiTI = Color(0xFF38BDF8);     // Cyan Sky ─ Teknik Informatika
+  static const Color prodiTRPL = Color(0xFF10B981);   // Emerald Green ─ Rekayasa Perangkat Lunak
 
   // ── Glass / Blur ──────────────────────────────────────────────
   static const double glassBlur = 20.0;

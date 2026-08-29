@@ -32,6 +32,14 @@ class SupabaseBookingRepository {
     return _localRepo.getAllBookings();
   }
 
+  static bool _isValidUuid(String? str) {
+    if (str == null) return false;
+    final uuidRegex = RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+    );
+    return uuidRegex.hasMatch(str);
+  }
+
   /// Membuat pengajuan peminjaman baru dengan Blockchain Ledger Hash
   Future<BookingModel> createBooking(BookingModel booking) async {
     // 1. Generate cryptographic block hash untuk integritas transaksi
@@ -45,6 +53,26 @@ class SupabaseBookingRepository {
     final payload = booking.toJson();
     payload['booking_ledger_hash'] = ledgerHash;
 
+    // 2. Format tanggal ke format SQL Date (yyyy-MM-dd)
+    final d = booking.bookingDate;
+    payload['booking_date'] =
+        '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+    // 3. Pastikan user_id berupa UUID valid atau null (untuk kiosk tanpa login)
+    if (!_isValidUuid(booking.userId)) {
+      final currentAuthId = _client.auth.currentUser?.id;
+      if (currentAuthId != null && _isValidUuid(currentAuthId)) {
+        payload['user_id'] = currentAuthId;
+      } else {
+        payload['user_id'] = null;
+      }
+    }
+
+    // 4. Pastikan id tidak mengirim format non-UUID (biarkan Supabase generate gen_random_uuid())
+    if (!_isValidUuid(booking.id)) {
+      payload.remove('id');
+    }
+
     try {
       final response = await _client
           .from(SupabaseTables.bookings)
@@ -54,9 +82,10 @@ class SupabaseBookingRepository {
 
       final created = BookingModel.fromJson(response);
       _localRepo.createBooking(created);
+      debugPrint('✅ [SupabaseBookingRepository] Berhasil simpan booking ${created.bookingCode} ke Supabase Cloud (ID: ${created.id})');
       return created;
     } catch (e) {
-      debugPrint('⚠️ [SupabaseBookingRepository] Gagal simpan ke cloud, simpan ke lokal: $e');
+      debugPrint('⚠️ [SupabaseBookingRepository] Gagal simpan ke cloud ($e), fallback ke lokal');
       return await _localRepo.createBooking(booking);
     }
   }

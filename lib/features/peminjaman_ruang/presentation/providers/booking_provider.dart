@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/supabase/supabase_config.dart';
 import '../../domain/models/booking_model.dart';
 import '../../domain/models/room_model.dart';
 import '../../data/repositories/booking_repository.dart';
@@ -9,15 +13,70 @@ final supabaseBookingRepoProvider = Provider<SupabaseBookingRepository>((ref) {
   return SupabaseBookingRepository();
 });
 
+/// Provider notifikasi ketika ada peminjaman baru yang baru masuk ke sistem secara real-time
+final newBookingEventProvider = StateProvider<BookingModel?>((ref) => null);
+
 class BookingListNotifier extends StateNotifier<List<BookingModel>> {
   final SupabaseBookingRepository _repository;
+  final void Function(BookingModel newBooking)? _onNewBooking;
+  RealtimeChannel? _realtimeChannel;
+  Timer? _pollingTimer;
 
-  BookingListNotifier(this._repository) : super([]) {
+  BookingListNotifier(this._repository, [this._onNewBooking]) : super([]) {
     loadBookings();
+    _initRealtimeSync();
+  }
+
+  void _initRealtimeSync() {
+    try {
+      final client = Supabase.instance.client;
+      _realtimeChannel = client
+          .channel('public:${SupabaseTables.bookings}')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: SupabaseTables.bookings,
+            callback: (payload) {
+              debugPrint('⚡ [Realtime Supabase] Booking event: ${payload.eventType}');
+              loadBookings();
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      debugPrint('⚠️ [Realtime Supabase] Gagal inisialisasi Realtime Channel: $e');
+    }
+
+    // Polling auto-sync interval 5 detik untuk menjamin sinkronisasi cross-browser/PC
+    _pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      loadBookings();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    if (_realtimeChannel != null) {
+      Supabase.instance.client.removeChannel(_realtimeChannel!);
+    }
+    super.dispose();
   }
 
   Future<void> loadBookings() async {
+    final oldList = state;
     final list = await _repository.getAllBookings();
+
+    // Deteksi record baru yang belum pernah tercatat sebelumnya di state
+    if (oldList.isNotEmpty && list.length > oldList.length) {
+      final oldIds = oldList.map((b) => b.id).toSet();
+      final oldCodes = oldList.map((b) => b.bookingCode).toSet();
+      final newItems = list
+          .where((b) => !oldIds.contains(b.id) && !oldCodes.contains(b.bookingCode))
+          .toList();
+      if (newItems.isNotEmpty && _onNewBooking != null) {
+        _onNewBooking(newItems.first);
+      }
+    }
+
     state = list;
   }
 
@@ -113,7 +172,9 @@ class BookingListNotifier extends StateNotifier<List<BookingModel>> {
 final bookingListProvider =
     StateNotifierProvider<BookingListNotifier, List<BookingModel>>((ref) {
   final repo = ref.watch(supabaseBookingRepoProvider);
-  return BookingListNotifier(repo);
+  return BookingListNotifier(repo, (newBooking) {
+    ref.read(newBookingEventProvider.notifier).state = newBooking;
+  });
 });
 
 /// Provider filter status untuk admin/laboran

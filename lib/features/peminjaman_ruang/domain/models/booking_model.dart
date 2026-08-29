@@ -145,22 +145,24 @@ class BookingModel {
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
     return BookingModel(
-      id: json['id'] as String,
-      bookingCode: json['booking_code'] as String,
-      userId: json['user_id'] as String,
-      userName: json['user_name'] as String,
-      userNimNip: json['user_nim_nip'] as String,
+      id: json['id'] as String? ?? 'BKG-${DateTime.now().millisecondsSinceEpoch}',
+      bookingCode: json['booking_code'] as String? ?? 'PBM-${DateTime.now().millisecondsSinceEpoch}',
+      userId: json['user_id'] as String? ?? 'kiosk-student',
+      userName: json['user_name'] as String? ?? 'Mahasiswa',
+      userNimNip: json['user_nim_nip'] as String? ?? '-',
       userPhone: json['user_phone'] as String? ?? '-',
       userRole: json['user_role'] as String? ?? 'Mahasiswa',
-      roomCode: json['room_code'] as String,
-      roomName: json['room_name'] as String,
-      bookingDate: DateTime.parse(json['booking_date'] as String),
-      day: json['day'] as String,
-      startSession: json['start_session'] as int,
-      endSession: json['end_session'] as int,
-      startTime: json['start_time'] as String,
-      endTime: json['end_time'] as String,
-      purpose: json['purpose'] as String,
+      roomCode: json['room_code'] as String? ?? '-',
+      roomName: json['room_name'] as String? ?? '-',
+      bookingDate: json['booking_date'] != null
+          ? (DateTime.tryParse(json['booking_date'].toString()) ?? DateTime.now())
+          : DateTime.now(),
+      day: json['day'] as String? ?? 'Senin',
+      startSession: (json['start_session'] as num?)?.toInt() ?? 1,
+      endSession: (json['end_session'] as num?)?.toInt() ?? 1,
+      startTime: json['start_time'] as String? ?? '07:30',
+      endTime: json['end_time'] as String? ?? '08:20',
+      purpose: json['purpose'] as String? ?? '-',
       description: json['description'] as String? ?? '',
       supervisorLecturer: json['supervisor_lecturer'] as String? ?? '-',
       additionalFacilities: (json['additional_facilities'] as List<dynamic>?)
@@ -172,7 +174,9 @@ class BookingModel {
         orElse: () => BookingStatus.pending,
       ),
       rejectionReason: json['rejection_reason'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: json['created_at'] != null
+          ? (DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now())
+          : DateTime.now(),
       approvedAt: json['approved_at'] != null
           ? DateTime.parse(json['approved_at'] as String)
           : null,

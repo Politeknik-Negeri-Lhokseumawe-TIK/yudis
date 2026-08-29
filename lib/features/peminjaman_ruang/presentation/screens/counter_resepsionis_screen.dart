@@ -300,6 +300,53 @@ class _CounterResepsionisScreenState
           b.purpose.toLowerCase().contains(q);
     }).toList();
 
+    // Listener notifikasi permohonan baru dari Kiosk PC 2/3
+    ref.listen<BookingModel?>(newBookingEventProvider, (prev, next) {
+      if (next != null) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF0F172A),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: AppTokens.accentGold, width: 2),
+            ),
+            duration: const Duration(seconds: 8),
+            content: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppTokens.accentGold.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.notifications_active_rounded, color: AppTokens.accentGold, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '🔔 PERMOHONAN KUNCI BARU DARI KIOSK!',
+                        style: TextStyle(color: AppTokens.accentGold, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      Text(
+                        '${next.userName} • Ruang ${next.roomCode} (${next.purpose})',
+                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+    });
+
     final incomingRequests = allBookings.where((b) => b.status == BookingStatus.approved || b.status == BookingStatus.pending).toList();
 
     return Scaffold(

@@ -42,7 +42,8 @@ class OfficersNotifier extends StateNotifier<OfficersState> {
   }
 
   static SupabaseClient get _supabase => Supabase.instance.client;
-  StreamSubscription? _streamSub;
+  RealtimeChannel? _realtimeChannel;
+  Timer? _pollingTimer;
   static const String _prefActiveKey = 'simlab_active_officer_id';
   static const String _prefCustomListKey = 'simlab_custom_officers_list';
 
@@ -72,7 +73,34 @@ class OfficersNotifier extends StateNotifier<OfficersState> {
       state = state.copyWith(officers: list, activeOfficer: active);
     } catch (_) {}
 
-    // 2. Sinkronisasi dari Supabase Database (Real-Time antar komputer)
+    // 2. Fetch awal dari Supabase Cloud
+    await _fetchFromCloud();
+
+    // 3. Realtime Listener Channel
+    try {
+      _realtimeChannel = _supabase
+          .channel('public:receptionist_officers')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'receptionist_officers',
+            callback: (payload) {
+              debugPrint('⚡ [Realtime Officers] Officer event: ${payload.eventType}');
+              _fetchFromCloud();
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      debugPrint('⚠️ [Realtime Officers] Listener error: $e');
+    }
+
+    // 4. Polling sinkronisasi berkala (interval 4 detik)
+    _pollingTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      _fetchFromCloud();
+    });
+  }
+
+  Future<void> _fetchFromCloud() async {
     try {
       final rows = await _supabase
           .from('receptionist_officers')
@@ -87,24 +115,20 @@ class OfficersNotifier extends StateNotifier<OfficersState> {
         );
 
         state = state.copyWith(officers: dbOfficers, activeOfficer: activeDb);
+      } else {
+        // Jika tabel cloud masih kosong, seed petugas default
+        _seedDefaultOfficersToCloud();
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('⚠️ [OfficersNotifier] Fetch cloud error: $e');
+    }
+  }
 
-    // 3. Realtime Listener (Jika ada pergantian di PC 1, PC 2 & 3 otomatis update)
+  Future<void> _seedDefaultOfficersToCloud() async {
     try {
-      _streamSub = _supabase
-          .from('receptionist_officers')
-          .stream(primaryKey: ['id'])
-          .listen((rows) {
-        if (rows.isNotEmpty) {
-          final dbOfficers = rows.map((r) => ReceptionistOfficerModel.fromRow(r)).toList();
-          final activeDb = dbOfficers.firstWhere(
-            (o) => o.isOnDuty,
-            orElse: () => dbOfficers.first,
-          );
-          state = state.copyWith(officers: dbOfficers, activeOfficer: activeDb);
-        }
-      });
+      for (final officer in ReceptionistOfficerModel.defaultOfficers) {
+        await _supabase.from('receptionist_officers').upsert(officer.toMap());
+      }
     } catch (_) {}
   }
 
@@ -124,11 +148,24 @@ class OfficersNotifier extends StateNotifier<OfficersState> {
       await prefs.setString(_prefActiveKey, officer.id);
     } catch (_) {}
 
-    // Simpan ke Supabase Database Real-time agar PC 2 & 3 otomatis berubah
+    // Simpan ke Supabase Database Real-time agar PC 2, PC 3 & Mahasiswa otomatis berubah
     try {
+      // Nonaktifkan semua petugas lain
       await _supabase.from('receptionist_officers').update({'is_active': false}).neq('id', officer.id);
-      await _supabase.from('receptionist_officers').upsert(officer.toMap()..['is_active'] = true);
-    } catch (_) {}
+      // Aktifkan petugas yang dipilih
+      await _supabase.from('receptionist_officers').upsert({
+        'id': officer.id,
+        'name': officer.name,
+        'nip': officer.nip,
+        'role': officer.roleTitle,
+        'shift_name': officer.shiftName,
+        'shift_hours': officer.shiftHours,
+        'is_active': true,
+      });
+      debugPrint('✅ [OfficersNotifier] Petugas aktif berhasil diupdate di cloud: ${officer.name}');
+    } catch (e) {
+      debugPrint('⚠️ [OfficersNotifier] Gagal update petugas aktif ke cloud: $e');
+    }
   }
 
   /// Tambah Dosen/Petugas piket baru
@@ -154,12 +191,18 @@ class OfficersNotifier extends StateNotifier<OfficersState> {
     try {
       await _supabase.from('receptionist_officers').update({'is_active': false}).neq('id', newOfficer.id);
       await _supabase.from('receptionist_officers').upsert(officerWithDuty.toMap());
-    } catch (_) {}
+      debugPrint('✅ [OfficersNotifier] Petugas baru berhasil disimpan ke cloud: ${newOfficer.name}');
+    } catch (e) {
+      debugPrint('⚠️ [OfficersNotifier] Gagal simpan petugas baru ke cloud: $e');
+    }
   }
 
   @override
   void dispose() {
-    _streamSub?.cancel();
+    _pollingTimer?.cancel();
+    if (_realtimeChannel != null) {
+      _supabase.removeChannel(_realtimeChannel!);
+    }
     super.dispose();
   }
 }

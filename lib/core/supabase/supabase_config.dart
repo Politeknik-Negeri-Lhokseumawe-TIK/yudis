@@ -4,7 +4,7 @@ library;
 /// Settings → API → Project URL & anon/public key
 
 const String supabaseUrl = 'https://oojqbdnopdbolyuprmqa.supabase.co';
-const String supabaseAnonKey = 'sb_publishable_eo50rFNcCtRttuxEEB4C3A_qXh-Nxcl';
+const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vanFiZG5vcGRib2x5dXBybXFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4ODg3NDUsImV4cCI6MjEwMjQ2NDc0NX0.jM_AdvtChC06bH9b1ByUSVOkIQUkWysFyBJX1-yqxps';
 
 /// Supabase Tables & Storage Buckets
 class SupabaseTables {

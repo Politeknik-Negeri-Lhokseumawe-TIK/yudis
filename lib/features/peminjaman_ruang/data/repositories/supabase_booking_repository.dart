@@ -94,7 +94,41 @@ class SupabaseBookingRepository {
       return created;
     } catch (e) {
       debugPrint('❌ [SupabaseBookingRepository] ERROR INSERT KE SUPABASE: $e');
-      return await _localRepo.createBooking(booking);
+      // Coba fallback dengan payload paling esensial jika ada kolom yang belum tersedia di database
+      try {
+        final basicPayload = <String, dynamic>{
+          'booking_code': booking.bookingCode,
+          'user_name': booking.userName,
+          'user_nim_nip': booking.userNimNip,
+          'user_phone': booking.userPhone,
+          'user_role': booking.userRole,
+          'room_code': booking.roomCode,
+          'room_name': booking.roomName,
+          'booking_date': formattedDate,
+          'day': booking.day,
+          'start_session': booking.startSession,
+          'end_session': booking.endSession,
+          'start_time': booking.startTime,
+          'end_time': booking.endTime,
+          'purpose': booking.purpose,
+          'description': booking.description,
+          'supervisor_lecturer': booking.supervisorLecturer,
+          'status': booking.status.name,
+        };
+        final response2 = await _client
+            .from(SupabaseTables.bookings)
+            .insert(basicPayload)
+            .select();
+        final List<dynamic> list2 = response2 as List<dynamic>;
+        final created2 = list2.isNotEmpty
+            ? BookingModel.fromJson(list2.first as Map<String, dynamic>)
+            : booking;
+        _localRepo.createBooking(created2);
+        return created2;
+      } catch (e2) {
+        debugPrint('❌ [SupabaseBookingRepository] RETRY BASIC PAYLOAD GAGAL: $e2');
+        rethrow;
+      }
     }
   }
 

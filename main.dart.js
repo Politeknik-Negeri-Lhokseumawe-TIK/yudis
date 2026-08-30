@@ -36598,7 +36598,7 @@ $.afU=$.afL=null}if($.b3n() instanceof A.D_)$.byI=A.byH()
 s=2
 return A.t(A.ec(null,t.H),$async$afV)
 case 2:s=3
-return A.t(A.aGH("sb_publishable_eo50rFNcCtRttuxEEB4C3A_qXh-Nxcl","https://oojqbdnopdbolyuprmqa.supabase.co"),$async$afV)
+return A.t(A.aGH("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9vanFiZG5vcGRib2x5dXBybXFhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4ODg3NDUsImV4cCI6MjEwMjQ2NDc0NX0.jM_AdvtChC06bH9b1ByUSVOkIQUkWysFyBJX1-yqxps","https://oojqbdnopdbolyuprmqa.supabase.co"),$async$afV)
 case 3:A.aGN(B.aD5)
 if($.ae==null)A.a3c()
 q=$.ae

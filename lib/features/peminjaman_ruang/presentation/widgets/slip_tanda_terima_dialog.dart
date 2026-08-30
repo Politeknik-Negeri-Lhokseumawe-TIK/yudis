@@ -175,7 +175,7 @@ class SlipTandaTerimaDialog extends StatelessWidget {
               const SizedBox(height: 14),
 
               // Transaction Detail Rows
-              _buildSlipRow('Waktu Transaksi', timeStr),
+              _buildSlipRow('Waktu Peminjaman', timeStr),
               _buildSlipRow('Identitas Peminjam', '${booking.userName} (${booking.userNimNip})'),
               _buildSlipRow('Peran / Status', '${booking.userRole} • WA: ${booking.userPhone}'),
               _buildSlipRow('Ruang / Laboratorium', '${booking.roomCode} - ${booking.roomName}'),

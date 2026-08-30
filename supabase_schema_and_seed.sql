@@ -255,6 +255,9 @@ CREATE POLICY "roster_manage_admin" ON public.roster_items FOR ALL TO authentica
 -- Policy Receptionist Officers (Publik/Kiosk/PC bisa baca & ubah dosen piket secara sinkron)
 DROP POLICY IF EXISTS "officers_read_all" ON public.receptionist_officers;
 DROP POLICY IF EXISTS "officers_manage_admin" ON public.receptionist_officers;
+DROP POLICY IF EXISTS "officers_select_policy" ON public.receptionist_officers;
+DROP POLICY IF EXISTS "officers_insert_policy" ON public.receptionist_officers;
+DROP POLICY IF EXISTS "officers_update_policy" ON public.receptionist_officers;
 CREATE POLICY "officers_select_policy" ON public.receptionist_officers FOR SELECT USING (true);
 CREATE POLICY "officers_insert_policy" ON public.receptionist_officers FOR INSERT WITH CHECK (true);
 CREATE POLICY "officers_update_policy" ON public.receptionist_officers FOR UPDATE USING (true);

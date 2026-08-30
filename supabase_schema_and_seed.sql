@@ -258,18 +258,18 @@ DROP POLICY IF EXISTS "officers_manage_admin" ON public.receptionist_officers;
 DROP POLICY IF EXISTS "officers_select_policy" ON public.receptionist_officers;
 DROP POLICY IF EXISTS "officers_insert_policy" ON public.receptionist_officers;
 DROP POLICY IF EXISTS "officers_update_policy" ON public.receptionist_officers;
-CREATE POLICY "officers_select_policy" ON public.receptionist_officers FOR SELECT USING (true);
-CREATE POLICY "officers_insert_policy" ON public.receptionist_officers FOR INSERT WITH CHECK (true);
-CREATE POLICY "officers_update_policy" ON public.receptionist_officers FOR UPDATE USING (true);
+CREATE POLICY "officers_select_policy" ON public.receptionist_officers FOR SELECT TO anon, authenticated, service_role USING (true);
+CREATE POLICY "officers_insert_policy" ON public.receptionist_officers FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
+CREATE POLICY "officers_update_policy" ON public.receptionist_officers FOR UPDATE TO anon, authenticated, service_role USING (true);
 
 DROP POLICY IF EXISTS "bookings_select_policy" ON public.bookings;
-CREATE POLICY "bookings_select_policy" ON public.bookings FOR SELECT USING (true);
+CREATE POLICY "bookings_select_policy" ON public.bookings FOR SELECT TO anon, authenticated, service_role USING (true);
 
 DROP POLICY IF EXISTS "bookings_insert_policy" ON public.bookings;
-CREATE POLICY "bookings_insert_policy" ON public.bookings FOR INSERT WITH CHECK (true);
+CREATE POLICY "bookings_insert_policy" ON public.bookings FOR INSERT TO anon, authenticated, service_role WITH CHECK (true);
 
 DROP POLICY IF EXISTS "bookings_update_policy" ON public.bookings;
-CREATE POLICY "bookings_update_policy" ON public.bookings FOR UPDATE USING (true);
+CREATE POLICY "bookings_update_policy" ON public.bookings FOR UPDATE TO anon, authenticated, service_role USING (true);
 
 DROP POLICY IF EXISTS "profiles_select_policy" ON public.profiles;
 CREATE POLICY "profiles_select_policy" ON public.profiles FOR SELECT TO authenticated

@@ -46,27 +46,36 @@ class SupabaseBookingRepository {
       timestamp: booking.createdAt.toIso8601String(),
     );
 
-    final payload = booking.toJson();
-    payload['booking_ledger_hash'] = ledgerHash;
-
-    // 2. Format tanggal ke format SQL Date (yyyy-MM-dd)
     final d = booking.bookingDate;
-    payload['booking_date'] =
+    final formattedDate =
         '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-    // 3. Pastikan user_id berupa UUID valid atau null (untuk kiosk tanpa login)
-    if (!_isValidUuid(booking.userId)) {
-      final currentAuthId = _client.auth.currentUser?.id;
-      if (currentAuthId != null && _isValidUuid(currentAuthId)) {
-        payload['user_id'] = currentAuthId;
-      } else {
-        payload['user_id'] = null;
-      }
-    }
+    final payload = <String, dynamic>{
+      'booking_code': booking.bookingCode,
+      'user_id': _isValidUuid(booking.userId) ? booking.userId : null,
+      'user_name': booking.userName,
+      'user_nim_nip': booking.userNimNip,
+      'user_phone': booking.userPhone,
+      'user_role': booking.userRole,
+      'room_code': booking.roomCode,
+      'room_name': booking.roomName,
+      'booking_date': formattedDate,
+      'day': booking.day,
+      'start_session': booking.startSession,
+      'end_session': booking.endSession,
+      'start_time': booking.startTime,
+      'end_time': booking.endTime,
+      'purpose': booking.purpose,
+      'description': booking.description,
+      'supervisor_lecturer': booking.supervisorLecturer,
+      'additional_facilities': booking.additionalFacilities,
+      'status': booking.status.name,
+      'booking_ledger_hash': ledgerHash,
+      'created_at': booking.createdAt.toIso8601String(),
+    };
 
-    // 4. Pastikan id tidak mengirim format non-UUID (biarkan Supabase generate gen_random_uuid())
-    if (!_isValidUuid(booking.id)) {
-      payload.remove('id');
+    if (_isValidUuid(booking.id)) {
+      payload['id'] = booking.id;
     }
 
     try {

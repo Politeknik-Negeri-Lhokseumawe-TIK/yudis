@@ -122837,7 +122837,7 @@ l=A.bf(B.pk,B.m,1)
 k=h.d
 j=k.b
 i=k.c
-m=A.b([q,B.aK,B.XU,B.cf,n,B.ai,A.ab(g,A.ar(A.b([B.a4o,B.Z,A.bb(A.aE(A.b([A.P("PETUGAS RESEPSIONIS: "+j.toUpperCase(),g,g,g,g,B.aF9,g,g,g),A.P("NIP: "+i+" \u2022 "+k.r,g,g,g,g,B.aEM,g,g,g)],r),B.z,B.f,B.j),1,g)],r),B.l,B.f,B.j,0),B.k,g,g,new A.a7(B.WU,g,l,m,g,g,B.q),g,g,g,B.hL,g,g,g),B.c1,h.nJ("Waktu Transaksi",e),h.nJ("Identitas Peminjam",p.d+" ("+p.e+")"),h.nJ("Peran / Status",p.r+" \u2022 WA: "+p.f),h.nJ("Ruang / Laboratorium",p.w+" - "+p.x),h.nJ("Jadwal Peminjaman",p.z+", "+A.fX("dd/MM/yyyy",g).eZ(p.y)),h.nJ("Sesi Pemakaian",p.goZ()+" ("+p.at+" - "+p.ax+")"),h.nJ("Keperluan / Tujuan",p.ay),h.nJ("Dosen Penanggung Jawab",p.CW)],r)
+m=A.b([q,B.aK,B.XU,B.cf,n,B.ai,A.ab(g,A.ar(A.b([B.a4o,B.Z,A.bb(A.aE(A.b([A.P("PETUGAS RESEPSIONIS: "+j.toUpperCase(),g,g,g,g,B.aF9,g,g,g),A.P("NIP: "+i+" \u2022 "+k.r,g,g,g,g,B.aEM,g,g,g)],r),B.z,B.f,B.j),1,g)],r),B.l,B.f,B.j,0),B.k,g,g,new A.a7(B.WU,g,l,m,g,g,B.q),g,g,g,B.hL,g,g,g),B.c1,h.nJ("Waktu Peminjaman",e),h.nJ("Identitas Peminjam",p.d+" ("+p.e+")"),h.nJ("Peran / Status",p.r+" \u2022 WA: "+p.f),h.nJ("Ruang / Laboratorium",p.w+" - "+p.x),h.nJ("Jadwal Peminjaman",p.z+", "+A.fX("dd/MM/yyyy",g).eZ(p.y)),h.nJ("Sesi Pemakaian",p.goZ()+" ("+p.at+" - "+p.ax+")"),h.nJ("Keperluan / Tujuan",p.ay),h.nJ("Dosen Penanggung Jawab",p.CW)],r)
 q=p.cx
 if(q.length!==0)m.push(h.nJ("Fasilitas Tambahan",B.b.b6(q,", ")))
 m.push(B.aK)

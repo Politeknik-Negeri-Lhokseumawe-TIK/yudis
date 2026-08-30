@@ -82,15 +82,18 @@ class SupabaseBookingRepository {
       final response = await _client
           .from(SupabaseTables.bookings)
           .insert(payload)
-          .select()
-          .single();
+          .select();
 
-      final created = BookingModel.fromJson(response);
+      final List<dynamic> insertedList = response as List<dynamic>;
+      final created = insertedList.isNotEmpty
+          ? BookingModel.fromJson(insertedList.first as Map<String, dynamic>)
+          : booking;
+
       _localRepo.createBooking(created);
       debugPrint('✅ [SupabaseBookingRepository] Berhasil simpan booking ${created.bookingCode} ke Supabase Cloud (ID: ${created.id})');
       return created;
     } catch (e) {
-      debugPrint('⚠️ [SupabaseBookingRepository] Gagal simpan ke cloud ($e), fallback ke lokal');
+      debugPrint('❌ [SupabaseBookingRepository] ERROR INSERT KE SUPABASE: $e');
       return await _localRepo.createBooking(booking);
     }
   }

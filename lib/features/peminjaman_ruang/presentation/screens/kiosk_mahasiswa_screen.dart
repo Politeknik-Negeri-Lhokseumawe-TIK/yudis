@@ -291,11 +291,21 @@ class _KioskMahasiswaScreenState extends ConsumerState<KioskMahasiswaScreen> {
                                   createdAt: DateTime.now(),
                                 );
 
-                                await ref.read(bookingListProvider.notifier).createBooking(newBooking);
-
-                                if (!dialogCtx.mounted) return;
-                                Navigator.pop(dialogCtx);
-                                _showSuccessDialog(item, nameCtrl.text.trim(), activeOfficer);
+                                try {
+                                  await ref.read(bookingListProvider.notifier).createBooking(newBooking);
+                                  if (!dialogCtx.mounted) return;
+                                  Navigator.pop(dialogCtx);
+                                  _showSuccessDialog(item, nameCtrl.text.trim(), activeOfficer);
+                                } catch (err) {
+                                  setDialogState(() => isSubmitting = false);
+                                  if (!dialogCtx.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('⚠️ Gagal terhubung: $err'),
+                                      backgroundColor: AppTokens.error,
+                                    ),
+                                  );
+                                }
                               },
                       ),
                     ),

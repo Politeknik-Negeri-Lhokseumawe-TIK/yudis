@@ -9,7 +9,7 @@ class SupabaseBookingRepository {
   final SupabaseClient _client = Supabase.instance.client;
   final BookingRepository _localRepo = BookingRepository();
 
-  /// Mengambil semua booking dari Supabase (atau fallback lokal)
+  /// Mengambil semua booking dari Supabase (atau fallback lokal jika koneksi terputus)
   Future<List<BookingModel>> getAllBookings({String? userId}) async {
     try {
       var query = _client.from(SupabaseTables.bookings).select();
@@ -19,17 +19,13 @@ class SupabaseBookingRepository {
       final response = await query.order('created_at', ascending: false);
       final List<dynamic> data = response as List<dynamic>;
 
-      if (data.isNotEmpty) {
-        return data
-            .map((json) => BookingModel.fromJson(json as Map<String, dynamic>))
-            .toList();
-      }
+      return data
+          .map((json) => BookingModel.fromJson(json as Map<String, dynamic>))
+          .toList();
     } catch (e) {
-      debugPrint('⚠️ [SupabaseBookingRepository] Menggunakan local booking fallback: $e');
+      debugPrint('⚠️ [SupabaseBookingRepository] Menggunakan local booking fallback karena error: $e');
+      return _localRepo.getAllBookings();
     }
-
-    // Fallback ke penyimpanan memori lokal
-    return _localRepo.getAllBookings();
   }
 
   static bool _isValidUuid(String? str) {
